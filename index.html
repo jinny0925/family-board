@@ -768,9 +768,9 @@ function renderAnniv() {
     const hasYear = parts.length === 3;
     const displayDate = hasYear ? a.date : `${parts[0]}월 ${parts[1]}일`;
 
-    const subText = info.passed
-      ? `${displayDate}부터 ${info.passed.toLocaleString()}일째`
-      : `${info.dday === 0 ? '오늘이에요!' : info.dday + '일 남음'}`;
+    const subText = hasYear
+    ? `${displayDate}부터 ${info.passed.toLocaleString()}일째`
+    : `${parts[0]}월 ${parts[1]}일부터 매년 반복`;
 
     const near = info.dday <= 14;
     const ddText = info.dday === 0 ? 'D-DAY' : `D-${info.dday}`;
