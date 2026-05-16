@@ -446,33 +446,29 @@ const boardRef = doc(db, "familyBoards", "main");
   }
 
   function loadAll() {
-  try {
-    onSnapshot(
-      boardRef,
-      (snap) => {
-        if (snap.exists()) {
-          const loaded = snap.data();
+  onSnapshot(boardRef, (snap) => {
 
-          data = {
-            members: loaded.members || data.members,
-            events: loaded.events || [],
-            todos: loaded.todos || [],
-            annivs: loaded.annivs || []
-          };
-        }
+    if (snap.exists()) {
+      const loaded = snap.data();
 
-        render();
-      },
-      (error) => {
-        console.error("Firebase 불러오기 실패:", error);
-        alert("Firebase 연결 실패: Firestore 규칙 또는 설정값을 확인해주세요.");
-        render();
-      }
-    );
-  } catch (e) {
-    console.error("앱 초기화 실패:", e);
-    alert("앱 로딩 실패. Console 에러를 확인해주세요.");
+      data = {
+        members: loaded.members || data.members,
+        events: loaded.events || [],
+        todos: loaded.todos || [],
+        annivs: loaded.annivs || []
+      };
+    }
+
     render();
+  });
+}
+
+  async function saveAll() {
+  try {
+    await setDoc(boardRef, data);
+  } catch (e) {
+    alert('저장 실패');
+    console.error(e);
   }
 }
 
@@ -510,45 +506,6 @@ const boardRef = doc(db, "familyBoards", "main");
     }).sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
   }
 
-  function getAnnivInfo(dateValue) {
-    const now = new Date();
-    now.setHours(0,0,0,0);
-
-    const parts = String(dateValue || '').split('-').map(Number);
-    let year = null, m, d;
-
-    // YYYY-MM-DD 형식이면 연도까지 보관해서 "함께한지"를 계산
-    if (parts.length === 3) {
-      year = parts[0];
-      m = parts[1];
-      d = parts[2];
-    } else {
-      // MM-DD 형식의 기존 데이터는 다음 기념일까지 D-day만 계산
-      m = parts[0];
-      d = parts[1];
-    }
-
-    if (!m || !d) return { dday: 0, together: null, month: '', day: '' };
-
-    let next = new Date(now.getFullYear(), m - 1, d);
-    next.setHours(0,0,0,0);
-
-    if (next < now) {
-      next = new Date(now.getFullYear() + 1, m - 1, d);
-      next.setHours(0,0,0,0);
-    }
-
-    const dday = Math.ceil((next - now) / 86400000);
-
-    let together = null;
-    if (year) {
-      const start = new Date(year, m - 1, d);
-      start.setHours(0,0,0,0);
-      together = Math.max(1, Math.floor((now - start) / 86400000) + 1);
-    }
-
-    return { dday, together, month: m, day: d };
-  }
 
   function calcDday(dateValue) {
     return getAnnivInfo(dateValue).dday;
