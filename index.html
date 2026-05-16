@@ -128,9 +128,25 @@
   .event-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   .event-memo {
     font-size: 13px; color: var(--ink-mid); margin-top: 7px;
-    line-height: 1.5; white-space: pre-wrap; display: none;
+    line-height: 1.5; white-space: pre-wrap; display: block;
   }
   .event-card.open .event-memo { display: block; }
+  .event-actions, .anniv-actions {
+    display: flex; gap: 4px; align-items: center; flex-shrink: 0;
+  }
+  .event-edit, .anniv-edit {
+    background: none; border: none; color: var(--ink-soft);
+    cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 2px 4px;
+  }
+  .holiday-name {
+    font-size: 9px; font-weight: 700; color: #d9657e;
+    padding-left: 3px; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-cell.holiday .cal-num { color: #d9657e; }
+  .day-holiday {
+    display:inline-block; margin-left: 6px; color:#d9657e; font-weight:700;
+  }
   .event-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
   .event-del {
     background: none; border: none; color: var(--ink-soft);
@@ -317,12 +333,12 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 const firebaseConfig = {
-  apiKey: "AIzaSyCuPItNZquhK517IReU7PUI-ioNzIggNEw",
-  authDomain: "hjyj-calendar.firebaseapp.com",
-  projectId: "hjyj-calendar",
-  storageBucket: "hjyj-calendar.firebasestorage.app",
-  messagingSenderId: "732990575304",
-  appId: "1:732990575304:web:8286275b6829c48b1f4bfd"
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
 };
 
 const app = initializeApp(firebaseConfig);
@@ -348,6 +364,33 @@ const boardRef = doc(db, "familyBoards", "main");
 
   const OWNER_SHARED = 'shared';
   const DOW = ['일','월','화','수','목','금','토'];
+
+  // 2026년 한국 공휴일/대체공휴일 표시용
+  // 필요하면 여기에 날짜를 추가하면 됩니다.
+  const KR_HOLIDAYS = {
+    '2026-01-01': '신정',
+    '2026-02-16': '설날 연휴',
+    '2026-02-17': '설날',
+    '2026-02-18': '설날 연휴',
+    '2026-03-01': '삼일절',
+    '2026-03-02': '대체공휴일',
+    '2026-05-01': '근로자의 날',
+    '2026-05-05': '어린이날',
+    '2026-05-24': '부처님오신날',
+    '2026-05-25': '대체공휴일',
+    '2026-06-03': '지방선거일',
+    '2026-06-06': '현충일',
+    '2026-07-17': '제헌절',
+    '2026-08-15': '광복절',
+    '2026-08-17': '대체공휴일',
+    '2026-09-24': '추석 연휴',
+    '2026-09-25': '추석',
+    '2026-09-26': '추석 연휴',
+    '2026-10-03': '개천절',
+    '2026-10-05': '대체공휴일',
+    '2026-10-09': '한글날',
+    '2026-12-25': '성탄절'
+  };
 
   function loadAll() {
   onSnapshot(boardRef, (snap) => {
@@ -384,6 +427,7 @@ const boardRef = doc(db, "familyBoards", "main");
     const dt = new Date(y, m-1, d); dt.setHours(0,0,0,0); return dt;
   }
   function fmtDateK(d) { return `${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`; }
+  function holidayName(d) { return KR_HOLIDAYS[ymd(d)] || ''; }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
   function ownerColor(o) {
@@ -484,14 +528,17 @@ const boardRef = doc(db, "familyBoards", "main");
       const date = new Date(y,m,d);
       const dow = date.getDay();
       const evs = eventsOnDate(date);
+      const hName = holidayName(date);
+      const isHoliday = !!hName;
       const isToday = ymd(date)===ymd(now);
       const isSel = ymd(date)===ymd(selectedDate);
       let bars = '';
-      evs.slice(0,3).forEach(e => {
+      if (hName) bars += `<div class="holiday-name">${esc(hName)}</div>`;
+      evs.slice(0, hName ? 2 : 3).forEach(e => {
         bars += `<div class="cal-bar" style="background:${ownerColor(e.owner)}">${esc(e.title)}</div>`;
       });
-      if (evs.length>3) bars += `<div class="cal-more">+${evs.length-3}</div>`;
-      cells += `<div class="cal-cell ${dow===0?'sun':''} ${isToday?'today':''} ${isSel?'sel':''}" data-day="${ymd(date)}">
+      if (evs.length > (hName ? 2 : 3)) bars += `<div class="cal-more">+${evs.length-(hName ? 2 : 3)}</div>`;
+      cells += `<div class="cal-cell ${dow===0?'sun':''} ${isHoliday?'holiday':''} ${isToday?'today':''} ${isSel?'sel':''}" data-day="${ymd(date)}">
         <span class="cal-num">${d}</span>${bars}</div>`;
     }
     return calHeader() + `
@@ -543,12 +590,16 @@ const boardRef = doc(db, "familyBoards", "main");
             ${e.memo?`<div class="event-memo">${esc(e.memo)}</div>`:''}
           </div>
           <span class="event-tag" style="background:${ownerBg(e.owner)};color:${ownerColor(e.owner)}">${esc(ownerName(e.owner))}</span>
-          <button class="event-del" data-delev="${e.id}">✕</button>
+          <div class="event-actions">
+            <button class="event-edit" data-editev="${e.id}">수정</button>
+            <button class="event-del" data-delev="${e.id}">✕</button>
+          </div>
         </div>`;
       }).join('');
     }
+    const hName = holidayName(date);
     return `<div class="day-detail" ${noBorder?'style="border:none;margin-top:8px;padding-top:0"':''}>
-      <div class="day-detail-title">${fmtDateK(date)}</div>${body}</div>`;
+      <div class="day-detail-title">${fmtDateK(date)}${hName ? `<span class="day-holiday">${esc(hName)}</span>` : ''}</div>${body}</div>`;
   }
 
   function renderTodo() {
@@ -614,7 +665,10 @@ const boardRef = doc(db, "familyBoards", "main");
           <div class="anniv-name">${esc(a.name)}</div>
           <div class="anniv-date">${a.emoji||'🎂'} ${a._dday===0?'오늘이에요!':a._dday+'일 남음'}</div>
         </div>
-        <button class="anniv-del" data-dela="${a.id}">✕</button>
+        <div class="anniv-actions">
+          <button class="anniv-edit" data-edita="${a.id}">수정</button>
+          <button class="anniv-del" data-dela="${a.id}">✕</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -656,6 +710,12 @@ const boardRef = doc(db, "familyBoards", "main");
         el.classList.toggle('open');
       };
     });
+    document.querySelectorAll('[data-editev]').forEach(b => {
+      b.onclick = (e) => {
+        e.stopPropagation();
+        openEventModal(b.dataset.editev);
+      };
+    });
     document.querySelectorAll('[data-delev]').forEach(b => {
       b.onclick = async (e) => {
         e.stopPropagation();
@@ -680,6 +740,9 @@ const boardRef = doc(db, "familyBoards", "main");
         data.todos = data.todos.filter(x => x.id !== b.dataset.delto);
         await saveAll(); render();
       };
+    });
+    document.querySelectorAll('[data-edita]').forEach(b => {
+      b.onclick = () => openAnnivModal(b.dataset.edita);
     });
     document.querySelectorAll('[data-dela]').forEach(b => {
       b.onclick = async () => {
@@ -722,46 +785,51 @@ const boardRef = doc(db, "familyBoards", "main");
     });
   }
 
-  function openEventModal() {
-    const todayStr = ymd(selectedDate);
+  function openEventModal(editId = null) {
+    const editing = editId ? data.events.find(x => x.id === editId) : null;
+    const todayStr = editing ? editing.startDate : ymd(selectedDate);
+    const isRange = editing && editing.endDate && editing.endDate !== editing.startDate;
+
     modalInner.innerHTML = `
       <div class="modal-grip"></div>
-      <div class="modal-title">새 일정</div>
+      <div class="modal-title">${editing ? '일정 수정' : '새 일정'}</div>
       <div class="seg" id="evtType">
-        <button class="active" data-t="single">하루 일정</button>
-        <button data-t="range">여러 날 (1~3일)</button>
+        <button class="${!isRange?'active':''}" data-t="single">하루 일정</button>
+        <button class="${isRange?'active':''}" data-t="range">여러 날 (1~3일)</button>
       </div>
       <div class="field">
         <label>제목</label>
-        <input id="evtTitle" placeholder="예: 가족 외식, 병원 예약" />
+        <input id="evtTitle" placeholder="예: 가족 외식, 병원 예약" value="${esc(editing?.title || '')}" />
       </div>
-      <div id="singleFields">
+      <div id="singleFields" style="${isRange?'display:none':''}">
         <div class="field-row">
           <div class="field"><label>날짜</label><input id="evtDate" type="date" value="${todayStr}" /></div>
-          <div class="field"><label>시간 (선택)</label><input id="evtTime" type="time" /></div>
+          <div class="field"><label>시간 (선택)</label><input id="evtTime" type="time" value="${editing?.time || ''}" /></div>
         </div>
       </div>
-      <div id="rangeFields" style="display:none">
+      <div id="rangeFields" style="${isRange?'':'display:none'}">
         <div class="field-row">
-          <div class="field"><label>시작일</label><input id="evtStart" type="date" value="${todayStr}" /></div>
-          <div class="field"><label>종료일</label><input id="evtEnd" type="date" value="${todayStr}" /></div>
+          <div class="field"><label>시작일</label><input id="evtStart" type="date" value="${editing?.startDate || todayStr}" /></div>
+          <div class="field"><label>종료일</label><input id="evtEnd" type="date" value="${editing?.endDate || todayStr}" /></div>
         </div>
       </div>
       <div class="field">
         <label>메모 (선택)</label>
-        <textarea id="evtMemo" placeholder="자세한 내용을 적어주세요"></textarea>
+        <textarea id="evtMemo" placeholder="자세한 내용을 적어주세요">${esc(editing?.memo || '')}</textarea>
       </div>
       <div class="field">
         <label>누구</label>
-        <div class="chip-row" id="evtOwner">${ownerChips(OWNER_SHARED)}</div>
+        <div class="chip-row" id="evtOwner">${ownerChips(editing?.owner || OWNER_SHARED)}</div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="mCancel">취소</button>
-        <button class="btn btn-save" id="mSave">저장</button>
+        <button class="btn btn-save" id="mSave">${editing ? '수정 저장' : '저장'}</button>
       </div>`;
     modalBg.classList.add('open');
 
-    let evtType = 'single', owner = OWNER_SHARED;
+    let evtType = isRange ? 'range' : 'single';
+    let owner = editing?.owner || OWNER_SHARED;
+
     modalInner.querySelectorAll('#evtType button').forEach(b => {
       b.onclick = () => {
         modalInner.querySelectorAll('#evtType button').forEach(x=>x.classList.remove('active'));
@@ -777,7 +845,9 @@ const boardRef = doc(db, "familyBoards", "main");
       const title = modalInner.querySelector('#evtTitle').value.trim();
       const memo = modalInner.querySelector('#evtMemo').value.trim();
       if (!title) { alert('제목을 입력해주세요'); return; }
-      let ev = { id: uid(), title, memo, owner };
+
+      let ev = editing ? { ...editing, title, memo, owner } : { id: uid(), title, memo, owner };
+
       if (evtType==='single') {
         ev.startDate = modalInner.querySelector('#evtDate').value;
         ev.endDate = ev.startDate;
@@ -789,7 +859,13 @@ const boardRef = doc(db, "familyBoards", "main");
         if (Math.round((parseYmd(e)-parseYmd(s))/86400000) > 2) { alert('여러 날 일정은 최대 3일까지만 가능해요'); return; }
         ev.startDate = s; ev.endDate = e; ev.time = '';
       }
-      data.events.push(ev);
+
+      if (editing) {
+        data.events = data.events.map(x => x.id === editId ? ev : x);
+      } else {
+        data.events.push(ev);
+      }
+
       await saveAll();
       closeModal(); render();
     };
@@ -826,34 +902,35 @@ const boardRef = doc(db, "familyBoards", "main");
     };
   }
 
-  function openAnnivModal() {
-    let emoji = '🎂';
+  function openAnnivModal(editId = null) {
+    const editing = editId ? data.annivs.find(x => x.id === editId) : null;
+    let emoji = editing?.emoji || '🎂';
+    const nowYear = new Date().getFullYear();
+    const editDate = editing ? `${nowYear}-${editing.date}` : '';
+
     modalInner.innerHTML = `
       <div class="modal-grip"></div>
-      <div class="modal-title">새 기념일</div>
+      <div class="modal-title">${editing ? '기념일 수정' : '새 기념일'}</div>
       <div class="field">
         <label>이름</label>
-        <input id="annivName" placeholder="예: 혁주 생일, 결혼기념일" />
+        <input id="annivName" placeholder="예: 혁주 생일, 결혼기념일" value="${esc(editing?.name || '')}" />
       </div>
       <div class="field">
         <label>날짜</label>
-        <input id="annivDate" type="date" />
+        <input id="annivDate" type="date" value="${editDate}" />
       </div>
       <div class="field">
         <label>아이콘</label>
         <div class="chip-row" id="annivEmoji">
-          <div class="chip" data-emoji="🎂" style="background:var(--surface)">🎂</div>
-          <div class="chip" data-emoji="💍">💍</div>
-          <div class="chip" data-emoji="🎉">🎉</div>
-          <div class="chip" data-emoji="❤️">❤️</div>
-          <div class="chip" data-emoji="🎓">🎓</div>
+          ${['🎂','💍','🎉','❤️','🎓'].map(e => `<div class="chip" data-emoji="${e}" style="${emoji===e?'background:var(--surface)':''}">${e}</div>`).join('')}
         </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="mCancel">취소</button>
-        <button class="btn btn-save" id="mSave">등록</button>
+        <button class="btn btn-save" id="mSave">${editing ? '수정 저장' : '등록'}</button>
       </div>`;
     modalBg.classList.add('open');
+
     const emojiRow = modalInner.querySelector('#annivEmoji');
     emojiRow.querySelectorAll('.chip').forEach(c => {
       c.onclick = () => {
@@ -868,7 +945,11 @@ const boardRef = doc(db, "familyBoards", "main");
       const dv = modalInner.querySelector('#annivDate').value;
       if (!name || !dv) { alert('이름과 날짜를 입력해주세요'); return; }
       const [,m,d] = dv.split('-');
-      data.annivs.push({ id: uid(), name, date: `${m}-${d}`, emoji });
+      const item = { id: editing?.id || uid(), name, date: `${m}-${d}`, emoji };
+
+      if (editing) data.annivs = data.annivs.map(x => x.id === editId ? item : x);
+      else data.annivs.push(item);
+
       await saveAll();
       closeModal(); render();
     };
