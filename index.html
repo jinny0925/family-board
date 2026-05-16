@@ -217,10 +217,10 @@
   }
 
   .anniv-item { display: flex; align-items: center; gap: 13px; padding: 15px 0; border-bottom: 1px solid var(--line); }
-  .anniv-dday { width: 58px; flex-shrink: 0; text-align: center; }
+  .anniv-dday { width: 92px; flex-shrink: 0; text-align: center; }
   .anniv-dday-num { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; }
   .anniv-dday.near .anniv-dday-num { color: #d9657e; }
-  .anniv-dday-sub { font-size: 10px; color: var(--ink-soft); margin-top: 1px; }
+  .anniv-dday-sub { font-size: 10px; color: var(--ink-soft); margin-top: 1px; line-height: 1.35; }
   .anniv-divider { width: 1px; align-self: stretch; background: var(--line); }
   .anniv-info { flex: 1; }
   .anniv-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
@@ -501,34 +501,48 @@ const boardRef = doc(db, "familyBoards", "main");
     }).sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
   }
 
-  function calcDday(dateValue) {
+  function getAnnivInfo(dateValue) {
     const now = new Date();
     now.setHours(0,0,0,0);
 
     const parts = String(dateValue || '').split('-').map(Number);
-    let m, d;
+    let year = null, m, d;
 
-    // 2025-02-08처럼 연도가 포함되어 저장된 기존 데이터도 월/일만 사용
+    // YYYY-MM-DD 형식이면 연도까지 보관해서 "함께한지"를 계산
     if (parts.length === 3) {
+      year = parts[0];
       m = parts[1];
       d = parts[2];
     } else {
+      // MM-DD 형식의 기존 데이터는 다음 기념일까지 D-day만 계산
       m = parts[0];
       d = parts[1];
     }
 
-    if (!m || !d) return 0;
+    if (!m || !d) return { dday: 0, together: null, month: '', day: '' };
 
-    let target = new Date(now.getFullYear(), m - 1, d);
-    target.setHours(0,0,0,0);
+    let next = new Date(now.getFullYear(), m - 1, d);
+    next.setHours(0,0,0,0);
 
-    // 올해 기념일이 지났으면 내년 기념일로 계산
-    if (target < now) {
-      target = new Date(now.getFullYear() + 1, m - 1, d);
-      target.setHours(0,0,0,0);
+    if (next < now) {
+      next = new Date(now.getFullYear() + 1, m - 1, d);
+      next.setHours(0,0,0,0);
     }
 
-    return Math.round((target - now) / 86400000);
+    const dday = Math.ceil((next - now) / 86400000);
+
+    let together = null;
+    if (year) {
+      const start = new Date(year, m - 1, d);
+      start.setHours(0,0,0,0);
+      together = Math.max(1, Math.floor((now - start) / 86400000) + 1);
+    }
+
+    return { dday, together, month: m, day: d };
+  }
+
+  function calcDday(dateValue) {
+    return getAnnivInfo(dateValue).dday;
   }
 
   function esc(s) {
@@ -744,22 +758,30 @@ const boardRef = doc(db, "familyBoards", "main");
     if (data.annivs.length===0) {
       return `<div class="empty"><div class="ic">🎂</div>등록된 기념일이 없어요<br>가족 생일을 추가해보세요</div>`;
     }
-    const sorted = [...data.annivs].map(a => ({...a, _dday: calcDday(a.date)})).sort((x,y)=>x._dday-y._dday);
+    const sorted = [...data.annivs]
+      .map(a => ({...a, _info: getAnnivInfo(a.date)}))
+      .sort((x,y)=>x._info.dday-y._info.dday);
+
     return sorted.map(a => {
-      const parts = String(a.date || '').split('-').map(Number);
-      const m = parts.length === 3 ? parts[1] : parts[0];
-      const d = parts.length === 3 ? parts[2] : parts[1];
-      const near = a._dday <= 14;
-      const ddText = a._dday===0 ? 'D-DAY' : `D-${a._dday}`;
+      const info = a._info;
+      const near = info.dday <= 14;
+      const ddText = info.dday === 0 ? 'D-DAY' : `D-${info.dday}`;
+      const subText = info.together
+        ? `${info.month}월 ${info.day}일 · 함께한지 ${info.together.toLocaleString()}일`
+        : `${info.month}월 ${info.day}일`;
+      const detailText = info.dday === 0
+        ? '오늘이에요!'
+        : `${info.dday}일 남음${info.together ? ` · 함께한지 ${info.together.toLocaleString()}일` : ''}`;
+
       return `<div class="anniv-item">
         <div class="anniv-dday ${near?'near':''}">
           <div class="anniv-dday-num">${ddText}</div>
-          <div class="anniv-dday-sub">${m}월 ${d}일</div>
+          <div class="anniv-dday-sub">${subText}</div>
         </div>
         <div class="anniv-divider"></div>
         <div class="anniv-info">
           <div class="anniv-name">${esc(a.name)}</div>
-          <div class="anniv-date">${a.emoji||'🎂'} ${a._dday===0?'오늘이에요!':a._dday+'일 남음'}</div>
+          <div class="anniv-date">${a.emoji||'🎂'} ${detailText}</div>
         </div>
         <div class="anniv-actions">
           <button class="anniv-edit" data-edita="${a.id}">수정</button>
@@ -787,9 +809,31 @@ const boardRef = doc(db, "familyBoards", "main");
         if (dir===0) {
           cursor = new Date(); cursor.setHours(0,0,0,0);
           selectedDate = new Date(); selectedDate.setHours(0,0,0,0);
-        } else if (calView==='month') cursor.setMonth(cursor.getMonth()+dir);
-        else if (calView==='week') cursor.setDate(cursor.getDate()+dir*7);
-        else { selectedDate.setDate(selectedDate.getDate()+dir); cursor = new Date(selectedDate); }
+        } else if (calView==='month') {
+          cursor.setMonth(cursor.getMonth()+dir);
+          cursor.setDate(1);
+
+          const today = new Date();
+          today.setHours(0,0,0,0);
+
+          // 월을 이동하면 하단 상세도 이동한 월 안의 날짜로 맞춤
+          // 현재 보고 있는 월이 이번 달이면 오늘을 선택하고,
+          // 다른 달이면 해당 월 1일을 선택함
+          if (cursor.getFullYear() === today.getFullYear() && cursor.getMonth() === today.getMonth()) {
+            selectedDate = new Date(today);
+          } else {
+            selectedDate = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+            selectedDate.setHours(0,0,0,0);
+          }
+        } else if (calView==='week') {
+          cursor.setDate(cursor.getDate()+dir*7);
+          selectedDate = new Date(cursor);
+          selectedDate.setHours(0,0,0,0);
+        } else {
+          selectedDate.setDate(selectedDate.getDate()+dir);
+          selectedDate.setHours(0,0,0,0);
+          cursor = new Date(selectedDate);
+        }
         render();
       };
     });
@@ -1041,8 +1085,7 @@ const boardRef = doc(db, "familyBoards", "main");
       const name = modalInner.querySelector('#annivName').value.trim();
       const dv = modalInner.querySelector('#annivDate').value;
       if (!name || !dv) { alert('이름과 날짜를 입력해주세요'); return; }
-      const [,m,d] = dv.split('-');
-      const item = { id: editing?.id || uid(), name, date: `${m}-${d}`, emoji };
+      const item = { id: editing?.id || uid(), name, date: dv, emoji };
       if (editing) data.annivs = data.annivs.map(x => x.id === editId ? item : x);
       else data.annivs.push(item);
       await saveAll();
