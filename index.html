@@ -130,7 +130,6 @@
     font-size: 13px; color: var(--ink-mid); margin-top: 7px;
     line-height: 1.5; white-space: pre-wrap; display: block;
   }
-  .event-card.open .event-memo { display: block; }
   .event-actions, .anniv-actions {
     display: flex; gap: 4px; align-items: center; flex-shrink: 0;
   }
@@ -147,6 +146,16 @@
   .day-holiday {
     display:inline-block; margin-left: 6px; color:#d9657e; font-weight:700;
   }
+  .day-timeline { border-top: 1px solid var(--line); }
+  .time-row {
+    display: flex; min-height: 54px; border-bottom: 1px solid var(--line);
+  }
+  .time-label {
+    width: 52px; flex-shrink: 0; padding-top: 12px;
+    font-size: 11px; color: var(--ink-soft); font-weight: 600;
+  }
+  .time-events { flex: 1; padding: 6px 0; }
+  .time-events .event-card { margin-bottom: 6px; }
   .event-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
   .event-del {
     background: none; border: none; color: var(--ink-soft);
@@ -365,22 +374,21 @@ const boardRef = doc(db, "familyBoards", "main");
   const OWNER_SHARED = 'shared';
   const DOW = ['일','월','화','수','목','금','토'];
 
-  // 2026년 한국 공휴일/대체공휴일 표시용
-  // 필요하면 여기에 날짜를 추가하면 됩니다.
+  // 한국 공휴일 표시용. 2026~2028 기본 반영.
+  // 임시공휴일이 새로 생기면 여기에 날짜만 추가하면 됩니다.
   const KR_HOLIDAYS = {
+    // 2026
     '2026-01-01': '신정',
     '2026-02-16': '설날 연휴',
     '2026-02-17': '설날',
     '2026-02-18': '설날 연휴',
     '2026-03-01': '삼일절',
     '2026-03-02': '대체공휴일',
-    '2026-05-01': '근로자의 날',
     '2026-05-05': '어린이날',
     '2026-05-24': '부처님오신날',
     '2026-05-25': '대체공휴일',
     '2026-06-03': '지방선거일',
     '2026-06-06': '현충일',
-    '2026-07-17': '제헌절',
     '2026-08-15': '광복절',
     '2026-08-17': '대체공휴일',
     '2026-09-24': '추석 연휴',
@@ -389,8 +397,48 @@ const boardRef = doc(db, "familyBoards", "main");
     '2026-10-03': '개천절',
     '2026-10-05': '대체공휴일',
     '2026-10-09': '한글날',
-    '2026-12-25': '성탄절'
+    '2026-12-25': '크리스마스',
+    // 2027
+    '2027-01-01': '신정',
+    '2027-02-06': '설날 연휴',
+    '2027-02-07': '설날',
+    '2027-02-08': '설날 연휴',
+    '2027-02-09': '대체공휴일',
+    '2027-03-01': '삼일절',
+    '2027-05-05': '어린이날',
+    '2027-05-13': '부처님오신날',
+    '2027-06-06': '현충일',
+    '2027-08-15': '광복절',
+    '2027-08-16': '대체공휴일',
+    '2027-09-14': '추석 연휴',
+    '2027-09-15': '추석',
+    '2027-09-16': '추석 연휴',
+    '2027-10-03': '개천절',
+    '2027-10-04': '대체공휴일',
+    '2027-10-09': '한글날',
+    '2027-10-11': '대체공휴일',
+    '2027-12-25': '크리스마스',
+    // 2028
+    '2028-01-01': '신정',
+    '2028-01-26': '설날 연휴',
+    '2028-01-27': '설날',
+    '2028-01-28': '설날 연휴',
+    '2028-03-01': '삼일절',
+    '2028-05-02': '부처님오신날',
+    '2028-05-05': '어린이날',
+    '2028-06-06': '현충일',
+    '2028-08-15': '광복절',
+    '2028-10-02': '추석 연휴',
+    '2028-10-03': '추석/개천절',
+    '2028-10-04': '추석 연휴',
+    '2028-10-05': '대체공휴일',
+    '2028-10-09': '한글날',
+    '2028-12-25': '크리스마스'
   };
+
+  function holidayName(d) {
+    return KR_HOLIDAYS[ymd(d)] || '';
+  }
 
   function loadAll() {
   onSnapshot(boardRef, (snap) => {
@@ -427,7 +475,6 @@ const boardRef = doc(db, "familyBoards", "main");
     const dt = new Date(y, m-1, d); dt.setHours(0,0,0,0); return dt;
   }
   function fmtDateK(d) { return `${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`; }
-  function holidayName(d) { return KR_HOLIDAYS[ymd(d)] || ''; }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
   function ownerColor(o) {
@@ -454,12 +501,34 @@ const boardRef = doc(db, "familyBoards", "main");
     }).sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
   }
 
-  function calcDday(md) {
-    const [m,d] = md.split('-').map(Number);
-    const now = new Date(); now.setHours(0,0,0,0);
-    let t = new Date(now.getFullYear(), m-1, d);
-    if (t < now) t = new Date(now.getFullYear()+1, m-1, d);
-    return Math.round((t-now)/86400000);
+  function calcDday(dateValue) {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+
+    const parts = String(dateValue || '').split('-').map(Number);
+    let m, d;
+
+    // 2025-02-08처럼 연도가 포함되어 저장된 기존 데이터도 월/일만 사용
+    if (parts.length === 3) {
+      m = parts[1];
+      d = parts[2];
+    } else {
+      m = parts[0];
+      d = parts[1];
+    }
+
+    if (!m || !d) return 0;
+
+    let target = new Date(now.getFullYear(), m - 1, d);
+    target.setHours(0,0,0,0);
+
+    // 올해 기념일이 지났으면 내년 기념일로 계산
+    if (target < now) {
+      target = new Date(now.getFullYear() + 1, m - 1, d);
+      target.setHours(0,0,0,0);
+    }
+
+    return Math.round((target - now) / 86400000);
   }
 
   function esc(s) {
@@ -529,16 +598,14 @@ const boardRef = doc(db, "familyBoards", "main");
       const dow = date.getDay();
       const evs = eventsOnDate(date);
       const hName = holidayName(date);
-      const isHoliday = !!hName;
       const isToday = ymd(date)===ymd(now);
       const isSel = ymd(date)===ymd(selectedDate);
-      let bars = '';
-      if (hName) bars += `<div class="holiday-name">${esc(hName)}</div>`;
-      evs.slice(0, hName ? 2 : 3).forEach(e => {
+      let bars = hName ? `<div class="holiday-name">${esc(hName)}</div>` : '';
+      evs.slice(0,3).forEach(e => {
         bars += `<div class="cal-bar" style="background:${ownerColor(e.owner)}">${esc(e.title)}</div>`;
       });
-      if (evs.length > (hName ? 2 : 3)) bars += `<div class="cal-more">+${evs.length-(hName ? 2 : 3)}</div>`;
-      cells += `<div class="cal-cell ${dow===0?'sun':''} ${isHoliday?'holiday':''} ${isToday?'today':''} ${isSel?'sel':''}" data-day="${ymd(date)}">
+      if (evs.length>3) bars += `<div class="cal-more">+${evs.length-3}</div>`;
+      cells += `<div class="cal-cell ${dow===0?'sun':''} ${hName?'holiday':''} ${isToday?'today':''} ${isSel?'sel':''}" data-day="${ymd(date)}">
         <span class="cal-num">${d}</span>${bars}</div>`;
     }
     return calHeader() + `
@@ -565,7 +632,55 @@ const boardRef = doc(db, "familyBoards", "main");
   }
 
   function renderDay() {
-    return calHeader() + renderDayDetail(selectedDate, true);
+    const evs = eventsOnDate(selectedDate);
+    const allDayEvents = evs.filter(e => !e.time);
+
+    let html = calHeader();
+    const hName = holidayName(selectedDate);
+    html += `<div class="day-detail" style="border:none;margin-top:8px;padding-top:0">
+      <div class="day-detail-title">${fmtDateK(selectedDate)}${hName ? `<span class="day-holiday">${esc(hName)}</span>` : ''}</div>
+    </div>`;
+
+    if (allDayEvents.length) {
+      html += allDayEvents.map(renderEventCard).join('');
+    }
+
+    html += `<div class="day-timeline">`;
+    for (let h = 0; h < 24; h++) {
+      const hh = String(h).padStart(2, '0');
+      const hourEvents = evs.filter(e => e.time && e.time.slice(0, 2) === hh);
+      html += `<div class="time-row">
+        <div class="time-label">${hh}:00</div>
+        <div class="time-events">${hourEvents.map(renderEventCard).join('')}</div>
+      </div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function eventMeta(e) {
+    const isMulti = e.endDate && e.endDate !== e.startDate;
+    if (isMulti) {
+      const sd = parseYmd(e.startDate), ed = parseYmd(e.endDate);
+      return `${sd.getMonth()+1}/${sd.getDate()} ~ ${ed.getMonth()+1}/${ed.getDate()}`;
+    }
+    return e.time || '하루 종일';
+  }
+
+  function renderEventCard(e) {
+    return `<div class="event-card" data-ev="${e.id}">
+      <div class="event-stripe" style="background:${ownerColor(e.owner)}"></div>
+      <div class="event-body">
+        <div class="event-name">${esc(e.title)}</div>
+        <div class="event-meta">${eventMeta(e)}</div>
+        ${e.memo ? `<div class="event-memo">${esc(e.memo)}</div>` : ''}
+      </div>
+      <span class="event-tag" style="background:${ownerBg(e.owner)};color:${ownerColor(e.owner)}">${esc(ownerName(e.owner))}</span>
+      <div class="event-actions">
+        <button class="event-edit" data-editev="${e.id}">수정</button>
+        <button class="event-del" data-delev="${e.id}">✕</button>
+      </div>
+    </div>`;
   }
 
   function renderDayDetail(date, noBorder) {
@@ -574,28 +689,7 @@ const boardRef = doc(db, "familyBoards", "main");
     if (evs.length===0) {
       body = `<div class="empty" style="padding:30px 20px"><div class="ic">📅</div>이 날은 일정이 없어요</div>`;
     } else {
-      body = evs.map(e => {
-        const isMulti = e.endDate && e.endDate !== e.startDate;
-        let meta;
-        if (isMulti) {
-          const sd = parseYmd(e.startDate), ed = parseYmd(e.endDate);
-          meta = `${sd.getMonth()+1}/${sd.getDate()} ~ ${ed.getMonth()+1}/${ed.getDate()}`;
-        } else if (e.time) meta = e.time;
-        else meta = '하루 종일';
-        return `<div class="event-card" data-ev="${e.id}">
-          <div class="event-stripe" style="background:${ownerColor(e.owner)}"></div>
-          <div class="event-body">
-            <div class="event-name">${esc(e.title)}</div>
-            <div class="event-meta">${meta}</div>
-            ${e.memo?`<div class="event-memo">${esc(e.memo)}</div>`:''}
-          </div>
-          <span class="event-tag" style="background:${ownerBg(e.owner)};color:${ownerColor(e.owner)}">${esc(ownerName(e.owner))}</span>
-          <div class="event-actions">
-            <button class="event-edit" data-editev="${e.id}">수정</button>
-            <button class="event-del" data-delev="${e.id}">✕</button>
-          </div>
-        </div>`;
-      }).join('');
+      body = evs.map(renderEventCard).join('');
     }
     const hName = holidayName(date);
     return `<div class="day-detail" ${noBorder?'style="border:none;margin-top:8px;padding-top:0"':''}>
@@ -652,7 +746,9 @@ const boardRef = doc(db, "familyBoards", "main");
     }
     const sorted = [...data.annivs].map(a => ({...a, _dday: calcDday(a.date)})).sort((x,y)=>x._dday-y._dday);
     return sorted.map(a => {
-      const [m,d] = a.date.split('-').map(Number);
+      const parts = String(a.date || '').split('-').map(Number);
+      const m = parts.length === 3 ? parts[1] : parts[0];
+      const d = parts.length === 3 ? parts[2] : parts[1];
       const near = a._dday <= 14;
       const ddText = a._dday===0 ? 'D-DAY' : `D-${a._dday}`;
       return `<div class="anniv-item">
@@ -789,6 +885,8 @@ const boardRef = doc(db, "familyBoards", "main");
     const editing = editId ? data.events.find(x => x.id === editId) : null;
     const todayStr = editing ? editing.startDate : ymd(selectedDate);
     const isRange = editing && editing.endDate && editing.endDate !== editing.startDate;
+    let evtType = isRange ? 'range' : 'single';
+    let owner = editing?.owner || OWNER_SHARED;
 
     modalInner.innerHTML = `
       <div class="modal-grip"></div>
@@ -819,16 +917,13 @@ const boardRef = doc(db, "familyBoards", "main");
       </div>
       <div class="field">
         <label>누구</label>
-        <div class="chip-row" id="evtOwner">${ownerChips(editing?.owner || OWNER_SHARED)}</div>
+        <div class="chip-row" id="evtOwner">${ownerChips(owner)}</div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="mCancel">취소</button>
         <button class="btn btn-save" id="mSave">${editing ? '수정 저장' : '저장'}</button>
       </div>`;
     modalBg.classList.add('open');
-
-    let evtType = isRange ? 'range' : 'single';
-    let owner = editing?.owner || OWNER_SHARED;
 
     modalInner.querySelectorAll('#evtType button').forEach(b => {
       b.onclick = () => {
@@ -846,7 +941,7 @@ const boardRef = doc(db, "familyBoards", "main");
       const memo = modalInner.querySelector('#evtMemo').value.trim();
       if (!title) { alert('제목을 입력해주세요'); return; }
 
-      let ev = editing ? { ...editing, title, memo, owner } : { id: uid(), title, memo, owner };
+      const ev = editing ? { ...editing, title, memo, owner } : { id: uid(), title, memo, owner };
 
       if (evtType==='single') {
         ev.startDate = modalInner.querySelector('#evtDate').value;
@@ -860,11 +955,8 @@ const boardRef = doc(db, "familyBoards", "main");
         ev.startDate = s; ev.endDate = e; ev.time = '';
       }
 
-      if (editing) {
-        data.events = data.events.map(x => x.id === editId ? ev : x);
-      } else {
-        data.events.push(ev);
-      }
+      if (editing) data.events = data.events.map(x => x.id === editId ? ev : x);
+      else data.events.push(ev);
 
       await saveAll();
       closeModal(); render();
@@ -906,7 +998,11 @@ const boardRef = doc(db, "familyBoards", "main");
     const editing = editId ? data.annivs.find(x => x.id === editId) : null;
     let emoji = editing?.emoji || '🎂';
     const nowYear = new Date().getFullYear();
-    const editDate = editing ? `${nowYear}-${editing.date}` : '';
+    let editDate = '';
+    if (editing?.date) {
+      const parts = String(editing.date).split('-');
+      editDate = parts.length === 3 ? editing.date : `${nowYear}-${editing.date}`;
+    }
 
     modalInner.innerHTML = `
       <div class="modal-grip"></div>
@@ -930,7 +1026,6 @@ const boardRef = doc(db, "familyBoards", "main");
         <button class="btn btn-save" id="mSave">${editing ? '수정 저장' : '등록'}</button>
       </div>`;
     modalBg.classList.add('open');
-
     const emojiRow = modalInner.querySelector('#annivEmoji');
     emojiRow.querySelectorAll('.chip').forEach(c => {
       c.onclick = () => {
@@ -946,10 +1041,8 @@ const boardRef = doc(db, "familyBoards", "main");
       if (!name || !dv) { alert('이름과 날짜를 입력해주세요'); return; }
       const [,m,d] = dv.split('-');
       const item = { id: editing?.id || uid(), name, date: `${m}-${d}`, emoji };
-
       if (editing) data.annivs = data.annivs.map(x => x.id === editId ? item : x);
       else data.annivs.push(item);
-
       await saveAll();
       closeModal(); render();
     };
