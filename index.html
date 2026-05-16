@@ -120,7 +120,7 @@
   .event-card {
     display: flex; align-items: flex-start; gap: 11px;
     padding: 13px; background: var(--surface); border-radius: 11px;
-    margin-bottom: 7px; cursor: pointer;
+    margin-bottom: 7px; cursor: default;
   }
   .event-stripe { width: 3px; align-self: stretch; border-radius: 3px; flex-shrink: 0; min-height: 34px; }
   .event-body { flex: 1; min-width: 0; }
@@ -802,8 +802,10 @@ const boardRef = doc(db, "familyBoards", "main");
     });
     document.querySelectorAll('[data-ev]').forEach(el => {
       el.onclick = (e) => {
-        if (e.target.closest('[data-delev]')) return;
-        el.classList.toggle('open');
+        // 일정 카드 클릭 시 수정 팝업이 뜨지 않도록 막음.
+        // 상세 내용(시간/메모)은 카드 안에 항상 표시되고,
+        // 수정은 오른쪽 '수정' 버튼으로만 실행됨.
+        if (e.target.closest('[data-editev]') || e.target.closest('[data-delev]')) return;
       };
     });
     document.querySelectorAll('[data-editev]').forEach(b => {
