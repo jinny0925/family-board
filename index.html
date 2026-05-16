@@ -29,7 +29,7 @@
   }
 
   .app {
-    max-width: 440px;
+    max-width: 460px;
     margin: 0 auto;
     background: var(--bg);
     min-height: 100vh;
@@ -58,9 +58,9 @@
 
   .tabs { display: flex; padding: 18px 22px 0; border-bottom: 1px solid var(--line); }
   .tab {
-    padding: 10px 2px 15px; margin-right: 26px;
+    padding: 12px 2px 17px; margin-right: 28px;
     background: none; border: none; font-family: inherit;
-    font-size: 17px; font-weight: 700; color: var(--ink-soft);
+    font-size: 18px; font-weight: 700; color: var(--ink-soft);
     cursor: pointer; position: relative; letter-spacing: -0.02em;
   }
   .tab.active { color: var(--ink); }
@@ -69,7 +69,7 @@
     height: 2px; background: var(--ink); border-radius: 2px;
   }
 
-  .content { padding: 20px 22px 110px; }
+  .content { padding: 22px 22px 120px; }
 
   .empty { text-align: center; padding: 50px 20px; color: var(--ink-soft); font-size: 14px; }
   .empty .ic { font-size: 32px; margin-bottom: 10px; }
@@ -86,31 +86,32 @@
 
   .view-switch { display: flex; background: var(--surface); border-radius: 9px; padding: 3px; margin-bottom: 16px; }
   .view-switch button {
-    flex: 1; padding: 7px; border: none; background: none;
-    font-family: inherit; font-size: 13px; font-weight: 600;
+    flex: 1; padding: 9px; border: none; background: none;
+    font-family: inherit; font-size: 14px; font-weight: 700;
     color: var(--ink-soft); cursor: pointer; border-radius: 7px;
   }
   .view-switch button.active { background: var(--bg); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
   .cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-soft); padding: 4px 0 8px; }
   .cal-dow.sun { color: #d9657e; }
   .cal-cell {
-    min-height: 64px; padding: 5px 3px; cursor: pointer;
+    min-height: 74px; padding: 6px 3px; cursor: pointer;
     border-radius: 7px; display: flex; flex-direction: column; gap: 2px;
+    width: 100%; min-width: 0; overflow: hidden;
   }
   .cal-cell.empty-cell { cursor: default; }
   .cal-cell.sel { background: var(--surface); }
-  .cal-num { font-size: 12px; font-weight: 600; color: var(--ink-mid); }
+  .cal-num { font-size: 13px; font-weight: 700; color: var(--ink-mid); }
   .cal-cell.today .cal-num {
     background: var(--ink); color: #fff; width: 20px; height: 20px;
     border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px;
   }
   .cal-cell.sun .cal-num { color: #d9657e; }
   .cal-bar {
-    height: 15px; border-radius: 4px; font-size: 9px; font-weight: 600;
+    width: 100%; height: 17px; border-radius: 4px; font-size: 10px; font-weight: 700;
     color: #fff; padding: 0 4px; display: flex; align-items: center;
-    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0;
   }
   .cal-more { font-size: 9px; font-weight: 700; color: var(--ink-soft); padding-left: 3px; }
 
@@ -124,11 +125,11 @@
   }
   .event-stripe { width: 3px; align-self: stretch; border-radius: 3px; flex-shrink: 0; min-height: 34px; }
   .event-body { flex: 1; min-width: 0; }
-  .event-name { font-size: 14px; font-weight: 600; letter-spacing: -0.02em; }
-  .event-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .event-name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  .event-meta { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
   .event-memo {
-    font-size: 13px; color: var(--ink-mid); margin-top: 7px;
-    line-height: 1.5; white-space: pre-wrap; display: block;
+    font-size: 14px; color: var(--ink-mid); margin-top: 8px;
+    line-height: 1.55; white-space: pre-wrap; display: block;
   }
   .event-actions, .anniv-actions {
     display: flex; gap: 4px; align-items: center; flex-shrink: 0;
@@ -138,7 +139,7 @@
     cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 2px 4px;
   }
   .holiday-name {
-    font-size: 9px; font-weight: 700; color: #d9657e;
+    font-size: 10px; font-weight: 800; color: #d9657e;
     padding-left: 3px; line-height: 1.15;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -180,14 +181,14 @@
 
   .todo-filter { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
   .filter-chip {
-    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--line-strong);
-    background: var(--bg); font-size: 12px; font-weight: 600;
+    padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line-strong);
+    background: var(--bg); font-size: 13px; font-weight: 700;
     color: var(--ink-mid); cursor: pointer;
   }
   .filter-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
   .todo-group-title {
-    font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    font-size: 13px; font-weight: 800; color: var(--ink-soft);
     margin: 18px 0 4px; letter-spacing: 0.02em;
   }
   .todo-item {
@@ -202,23 +203,26 @@
   }
   .todo-item.done .todo-check { background: var(--shared); border-color: var(--shared); }
   .todo-body { flex: 1; }
-  .todo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.02em; cursor: pointer; }
+  .todo-text { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; cursor: pointer; line-height: 1.45; }
   .todo-item.done .todo-text { color: var(--ink-soft); text-decoration: line-through; }
   .todo-memo-chip {
-    display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700;
+    display: inline-block; margin-top: 7px; font-size: 12px; font-weight: 700;
     color: var(--ink-mid); background: var(--surface); border: 1px solid var(--line);
     border-radius: 999px; padding: 3px 8px; cursor: pointer;
   }
-  .todo-dates { display: flex; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--ink-soft); }
+  .todo-dates { display: flex; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
   .todo-dates .dn { color: var(--shared); font-weight: 600; }
   .todo-who {
     width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
     color: #fff; font-size: 10px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; margin-top: 1px;
   }
-  .todo-del {
+  .todo-actions {
+    display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-top: 2px;
+  }
+  .todo-edit, .todo-del {
     background: none; border: none; color: var(--ink-soft);
-    cursor: pointer; font-size: 13px; flex-shrink: 0; margin-top: 3px;
+    cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 2px 4px;
   }
 
   .anniv-item { display: flex; align-items: center; gap: 13px; padding: 15px 0; border-bottom: 1px solid var(--line); }
@@ -228,8 +232,8 @@
   .anniv-dday-sub { font-size: 10px; color: var(--ink-soft); margin-top: 1px; line-height: 1.35; }
   .anniv-divider { width: 1px; align-self: stretch; background: var(--line); }
   .anniv-info { flex: 1; }
-  .anniv-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
-  .anniv-date { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .anniv-name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  .anniv-date { font-size: 13px; color: var(--ink-soft); margin-top: 3px; line-height: 1.45; }
   .anniv-del { background: none; border: none; color: var(--ink-soft); cursor: pointer; font-size: 13px; }
 
   .fab {
@@ -274,8 +278,8 @@
 
   .chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
   .chip {
-    padding: 9px 16px; border-radius: 11px; border: 1px solid var(--line-strong);
-    background: var(--bg); font-size: 14px; font-weight: 600;
+    padding: 10px 17px; border-radius: 11px; border: 1px solid var(--line-strong);
+    background: var(--bg); font-size: 15px; font-weight: 700;
     cursor: pointer; color: var(--ink-mid);
   }
 
@@ -705,7 +709,10 @@ const boardRef = doc(db, "familyBoards", "main");
           <div class="todo-dates">${dates}</div>
         </div>
         <div class="todo-who" style="background:${color}">${esc(nm)}</div>
-        <button class="todo-del" data-delto="${t.id}">✕</button>
+        <div class="todo-actions">
+          <button class="todo-edit" data-editto="${t.id}">수정</button>
+          <button class="todo-del" data-delto="${t.id}">✕</button>
+        </div>
       </div>`;
     }
 
@@ -806,7 +813,25 @@ function renderAnniv() {
       };
     });
     document.querySelectorAll('[data-v]').forEach(b => {
-      b.onclick = () => { calView = b.dataset.v; render(); };
+      b.onclick = () => {
+        calView = b.dataset.v;
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        // 주간으로 바꾸면 항상 오늘이 포함된 주간을 먼저 보여줌
+        if (calView === 'week') {
+          cursor = new Date(today);
+          selectedDate = new Date(today);
+        }
+
+        // 일간은 현재 선택된 날짜를 기준으로 표시
+        if (calView === 'day') {
+          cursor = new Date(selectedDate);
+        }
+
+        render();
+      };
     });
     document.querySelectorAll('[data-cal]').forEach(b => {
       b.onclick = () => {
@@ -883,6 +908,9 @@ function renderAnniv() {
         t.doneAt = t.doneAt ? null : ymd(new Date());
         await saveAll(); render();
       };
+    });
+    document.querySelectorAll('[data-editto]').forEach(b => {
+      b.onclick = () => openTodoModal(b.dataset.editto);
     });
     document.querySelectorAll('[data-delto]').forEach(b => {
       b.onclick = async () => {
@@ -1017,28 +1045,30 @@ function renderAnniv() {
     };
   }
 
-  function openTodoModal() {
-    let owner = data.members[0]?.id;
+  function openTodoModal(editId = null) {
+    const editing = editId ? data.todos.find(x => x.id === editId) : null;
+    let owner = editing?.owner || data.members[0]?.id;
+
     modalInner.innerHTML = `
       <div class="modal-grip"></div>
-      <div class="modal-title">새 할일</div>
+      <div class="modal-title">${editing ? '할일 수정' : '새 할일'}</div>
       <div class="field">
         <label>할일 제목</label>
-        <input id="todoText" placeholder="예: 우유 사기, 관리비 납부" />
+        <input id="todoText" placeholder="예: 우유 사기, 관리비 납부" value="${esc(editing?.text || '')}" />
       </div>
       <div class="field">
         <label>메모 (선택)</label>
-        <textarea id="todoMemo" placeholder="자세한 내용이나 링크, 준비물 등을 적어주세요"></textarea>
+        <textarea id="todoMemo" placeholder="자세한 내용이나 링크, 준비물 등을 적어주세요">${esc(editing?.memo || '')}</textarea>
       </div>
       <div class="field">
         <label>누구</label>
         <div class="chip-row" id="todoOwner">
-          ${data.members.map((m,i)=>`<div class="chip" data-owner="${m.id}" style="${i===0?`background:${m.color};color:#fff;border-color:transparent`:''}">${esc(m.name)}</div>`).join('')}
+          ${data.members.map((m)=>`<div class="chip" data-owner="${m.id}" style="${owner===m.id?`background:${m.color};color:#fff;border-color:transparent`:''}">${esc(m.name)}</div>`).join('')}
         </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-cancel" id="mCancel">취소</button>
-        <button class="btn btn-save" id="mSave">추가</button>
+        <button class="btn btn-save" id="mSave">${editing ? '수정 저장' : '추가'}</button>
       </div>`;
     modalBg.classList.add('open');
     bindChipRow('#todoOwner', v => owner = v);
@@ -1047,7 +1077,13 @@ function renderAnniv() {
       const text = modalInner.querySelector('#todoText').value.trim();
       const memo = modalInner.querySelector('#todoMemo').value.trim();
       if (!text) { alert('할일 제목을 입력해주세요'); return; }
-      data.todos.push({ id: uid(), text, memo, owner, createdAt: ymd(new Date()), doneAt: null });
+
+      if (editing) {
+        data.todos = data.todos.map(x => x.id === editId ? { ...x, text, memo, owner } : x);
+      } else {
+        data.todos.push({ id: uid(), text, memo, owner, createdAt: ymd(new Date()), doneAt: null });
+      }
+
       await saveAll();
       closeModal(); render();
     };
