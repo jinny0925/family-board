@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>혁주❤️연진</title>
+<title>혁주❤️연진<</title>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
@@ -58,9 +58,9 @@
 
   .tabs { display: flex; padding: 18px 22px 0; border-bottom: 1px solid var(--line); }
   .tab {
-    padding: 8px 2px 14px; margin-right: 22px;
+    padding: 10px 2px 15px; margin-right: 26px;
     background: none; border: none; font-family: inherit;
-    font-size: 15px; font-weight: 600; color: var(--ink-soft);
+    font-size: 17px; font-weight: 700; color: var(--ink-soft);
     cursor: pointer; position: relative; letter-spacing: -0.02em;
   }
   .tab.active { color: var(--ink); }
@@ -202,8 +202,13 @@
   }
   .todo-item.done .todo-check { background: var(--shared); border-color: var(--shared); }
   .todo-body { flex: 1; }
-  .todo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.02em; }
+  .todo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.02em; cursor: pointer; }
   .todo-item.done .todo-text { color: var(--ink-soft); text-decoration: line-through; }
+  .todo-memo-chip {
+    display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700;
+    color: var(--ink-mid); background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 8px; cursor: pointer;
+  }
   .todo-dates { display: flex; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--ink-soft); }
   .todo-dates .dn { color: var(--shared); font-weight: 600; }
   .todo-who {
@@ -308,7 +313,7 @@
   <header>
     <div class="head-row">
       <div>
-        <div class="head-title">혁주❤️연진</div>
+        <div class="head-title">혁주❤️연진<</div>
         <div class="head-date" id="headDate">—</div>
       </div>
       <div class="members" id="members"></div>
@@ -501,7 +506,45 @@ const boardRef = doc(db, "familyBoards", "main");
     }).sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
   }
 
- 
+  function getAnnivInfo(dateValue) {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+
+    const parts = String(dateValue || '').split('-').map(Number);
+    let year = null, m, d;
+
+    // YYYY-MM-DD 형식이면 연도까지 보관해서 "함께한지"를 계산
+    if (parts.length === 3) {
+      year = parts[0];
+      m = parts[1];
+      d = parts[2];
+    } else {
+      // MM-DD 형식의 기존 데이터는 다음 기념일까지 D-day만 계산
+      m = parts[0];
+      d = parts[1];
+    }
+
+    if (!m || !d) return { dday: 0, together: null, month: '', day: '' };
+
+    let next = new Date(now.getFullYear(), m - 1, d);
+    next.setHours(0,0,0,0);
+
+    if (next < now) {
+      next = new Date(now.getFullYear() + 1, m - 1, d);
+      next.setHours(0,0,0,0);
+    }
+
+    const dday = Math.ceil((next - now) / 86400000);
+
+    let together = null;
+    if (year) {
+      const start = new Date(year, m - 1, d);
+      start.setHours(0,0,0,0);
+      together = Math.max(1, Math.floor((now - start) / 86400000) + 1);
+    }
+
+    return { dday, together, month: m, day: d };
+  }
 
   function calcDday(dateValue) {
     return getAnnivInfo(dateValue).dday;
@@ -696,7 +739,8 @@ const boardRef = doc(db, "familyBoards", "main");
       return `<div class="todo-item ${t.doneAt?'done':''}">
         <div class="todo-check" data-toggle="${t.id}">${t.doneAt?'✓':''}</div>
         <div class="todo-body">
-          <div class="todo-text">${esc(t.text)}</div>
+          <div class="todo-text" data-tododetail="${t.id}">${esc(t.text)}</div>
+          ${t.memo ? `<div class="todo-memo-chip" data-tododetail="${t.id}">메모 보기</div>` : ''}
           <div class="todo-dates">${dates}</div>
         </div>
         <div class="todo-who" style="background:${color}">${esc(nm)}</div>
@@ -768,9 +812,9 @@ function renderAnniv() {
     const hasYear = parts.length === 3;
     const displayDate = hasYear ? a.date : `${parts[0]}월 ${parts[1]}일`;
 
-    const subText = hasYear
-    ? `${displayDate}부터 ${info.passed.toLocaleString()}일째`
-    : `${parts[0]}월 ${parts[1]}일부터 매년 반복`;
+    const subText = info.passed
+      ? `${displayDate}부터 ${info.passed.toLocaleString()}일째`
+      : `${info.dday === 0 ? '오늘이에요!' : info.dday + '일 남음'}`;
 
     const near = info.dday <= 14;
     const ddText = info.dday === 0 ? 'D-DAY' : `D-${info.dday}`;
@@ -868,6 +912,9 @@ function renderAnniv() {
     });
     document.querySelectorAll('[data-tf]').forEach(c => {
       c.onclick = () => { todoFilter = c.dataset.tf; render(); };
+    });
+    document.querySelectorAll('[data-tododetail]').forEach(el => {
+      el.onclick = () => openTodoDetailModal(el.dataset.tododetail);
     });
     document.querySelectorAll('[data-toggle]').forEach(el => {
       el.onclick = async () => {
@@ -1015,8 +1062,12 @@ function renderAnniv() {
       <div class="modal-grip"></div>
       <div class="modal-title">새 할일</div>
       <div class="field">
-        <label>할일 내용</label>
+        <label>할일 제목</label>
         <input id="todoText" placeholder="예: 우유 사기, 관리비 납부" />
+      </div>
+      <div class="field">
+        <label>메모 (선택)</label>
+        <textarea id="todoMemo" placeholder="자세한 내용이나 링크, 준비물 등을 적어주세요"></textarea>
       </div>
       <div class="field">
         <label>누구</label>
@@ -1033,11 +1084,49 @@ function renderAnniv() {
     modalInner.querySelector('#mCancel').onclick = closeModal;
     modalInner.querySelector('#mSave').onclick = async () => {
       const text = modalInner.querySelector('#todoText').value.trim();
-      if (!text) { alert('할일 내용을 입력해주세요'); return; }
-      data.todos.push({ id: uid(), text, owner, createdAt: ymd(new Date()), doneAt: null });
+      const memo = modalInner.querySelector('#todoMemo').value.trim();
+      if (!text) { alert('할일 제목을 입력해주세요'); return; }
+      data.todos.push({ id: uid(), text, memo, owner, createdAt: ymd(new Date()), doneAt: null });
       await saveAll();
       closeModal(); render();
     };
+  }
+
+  function openTodoDetailModal(todoId) {
+    const t = data.todos.find(x => x.id === todoId);
+    if (!t) return;
+    const m = data.members.find(x => x.id === t.owner);
+    const ownerLabel = m ? m.name : '?';
+    const created = t.createdAt ? parseYmd(t.createdAt) : null;
+    const done = t.doneAt ? parseYmd(t.doneAt) : null;
+
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">할일 상세</div>
+      <div class="field">
+        <label>제목</label>
+        <div style="font-size:16px;font-weight:700;line-height:1.5;letter-spacing:-0.02em;">${esc(t.text)}</div>
+      </div>
+      <div class="field">
+        <label>담당</label>
+        <div style="font-size:14px;color:var(--ink-mid);">${esc(ownerLabel)}</div>
+      </div>
+      <div class="field">
+        <label>일자</label>
+        <div style="font-size:14px;color:var(--ink-mid);line-height:1.6;">
+          ${created ? `등록 ${created.getMonth()+1}/${created.getDate()}` : ''}
+          ${done ? `<br>완료 ${done.getMonth()+1}/${done.getDate()}` : ''}
+        </div>
+      </div>
+      <div class="field">
+        <label>메모</label>
+        <div style="font-size:15px;line-height:1.65;white-space:pre-wrap;color:var(--ink);background:var(--surface);border-radius:12px;padding:13px;min-height:72px;">${t.memo ? esc(t.memo) : '메모가 없어요.'}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-save" id="mClose">확인</button>
+      </div>`;
+    modalBg.classList.add('open');
+    modalInner.querySelector('#mClose').onclick = closeModal;
   }
 
   function openAnnivModal(editId = null) {
