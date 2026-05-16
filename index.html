@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>우리집</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+  :root {
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --line: #ececec;
+    --line-strong: #e0e0e0;
+    --ink: #1c1c1e;
+    --ink-mid: #6b6b70;
+    --ink-soft: #a0a0a5;
+    --shared: #5b9a6b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { overflow-x: hidden; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #e8e8ea;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 440px;
+    margin: 0 auto;
+    background: var(--bg);
+    min-height: 100vh;
+    position: relative;
+  }
+
+  header { padding: 22px 22px 0; }
+  .head-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .head-title { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+  .head-date { font-size: 13px; color: var(--ink-soft); margin-top: 3px; font-weight: 500; }
+
+  .members { display: flex; cursor: pointer; }
+  .member-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    border: 2px solid #fff; margin-left: -8px;
+  }
+  .member-dot:first-child { margin-left: 0; }
+  .member-gear {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line-strong);
+    margin-left: -8px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--ink-mid);
+  }
+
+  .tabs { display: flex; padding: 18px 22px 0; border-bottom: 1px solid var(--line); }
+  .tab {
+    padding: 8px 2px 14px; margin-right: 22px;
+    background: none; border: none; font-family: inherit;
+    font-size: 15px; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; position: relative; letter-spacing: -0.02em;
+  }
+  .tab.active { color: var(--ink); }
+  .tab.active::after {
+    content: ""; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2px; background: var(--ink); border-radius: 2px;
+  }
+
+  .content { padding: 20px 22px 110px; }
+
+  .empty { text-align: center; padding: 50px 20px; color: var(--ink-soft); font-size: 14px; }
+  .empty .ic { font-size: 32px; margin-bottom: 10px; }
+
+  .cal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .cal-month { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .cal-nav { display: flex; gap: 4px; }
+  .cal-nav button {
+    width: 30px; height: 30px; border: 1px solid var(--line-strong);
+    background: var(--bg); border-radius: 8px; cursor: pointer;
+    font-size: 14px; color: var(--ink-mid);
+  }
+  .today-btn { font-size: 12px !important; width: auto !important; padding: 0 10px; font-weight: 600; }
+
+  .view-switch { display: flex; background: var(--surface); border-radius: 9px; padding: 3px; margin-bottom: 16px; }
+  .view-switch button {
+    flex: 1; padding: 7px; border: none; background: none;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-soft); cursor: pointer; border-radius: 7px;
+  }
+  .view-switch button.active { background: var(--bg); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-soft); padding: 4px 0 8px; }
+  .cal-dow.sun { color: #d9657e; }
+  .cal-cell {
+    min-height: 64px; padding: 5px 3px; cursor: pointer;
+    border-radius: 7px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .cal-cell.empty-cell { cursor: default; }
+  .cal-cell.sel { background: var(--surface); }
+  .cal-num { font-size: 12px; font-weight: 600; color: var(--ink-mid); }
+  .cal-cell.today .cal-num {
+    background: var(--ink); color: #fff; width: 20px; height: 20px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+  .cal-cell.sun .cal-num { color: #d9657e; }
+  .cal-bar {
+    height: 15px; border-radius: 4px; font-size: 9px; font-weight: 600;
+    color: #fff; padding: 0 4px; display: flex; align-items: center;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .cal-more { font-size: 9px; font-weight: 700; color: var(--ink-soft); padding-left: 3px; }
+
+  .day-detail { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .day-detail-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.02em; }
+
+  .event-card {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 13px; background: var(--surface); border-radius: 11px;
+    margin-bottom: 7px; cursor: pointer;
+  }
+  .event-stripe { width: 3px; align-self: stretch; border-radius: 3px; flex-shrink: 0; min-height: 34px; }
+  .event-body { flex: 1; min-width: 0; }
+  .event-name { font-size: 14px; font-weight: 600; letter-spacing: -0.02em; }
+  .event-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .event-memo {
+    font-size: 13px; color: var(--ink-mid); margin-top: 7px;
+    line-height: 1.5; white-space: pre-wrap; display: none;
+  }
+  .event-card.open .event-memo { display: block; }
+  .event-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+  .event-del {
+    background: none; border: none; color: var(--ink-soft);
+    cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 2px 4px;
+  }
+
+  .week-row { display: flex; gap: 6px; margin-bottom: 16px; }
+  .week-day {
+    flex: 1; text-align: center; padding: 9px 0; border-radius: 10px;
+    cursor: pointer; border: 1px solid var(--line); position: relative;
+  }
+  .week-day.sel { background: var(--ink); border-color: var(--ink); }
+  .week-day.sel .wd-dow, .week-day.sel .wd-num { color: #fff; }
+  .wd-dow { font-size: 10px; color: var(--ink-soft); font-weight: 600; }
+  .wd-dow.sun { color: #d9657e; }
+  .wd-num { font-size: 15px; font-weight: 700; margin-top: 3px; }
+  .wd-dot {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--shared);
+    position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+  }
+  .week-day.sel .wd-dot { background: #fff; }
+
+  .todo-filter { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--line-strong);
+    background: var(--bg); font-size: 12px; font-weight: 600;
+    color: var(--ink-mid); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .todo-group-title {
+    font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    margin: 18px 0 4px; letter-spacing: 0.02em;
+  }
+  .todo-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .todo-check {
+    width: 22px; height: 22px; border-radius: 7px;
+    border: 1.5px solid var(--line-strong); flex-shrink: 0;
+    cursor: pointer; margin-top: 1px; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-size: 12px;
+  }
+  .todo-item.done .todo-check { background: var(--shared); border-color: var(--shared); }
+  .todo-body { flex: 1; }
+  .todo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.02em; }
+  .todo-item.done .todo-text { color: var(--ink-soft); text-decoration: line-through; }
+  .todo-dates { display: flex; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--ink-soft); }
+  .todo-dates .dn { color: var(--shared); font-weight: 600; }
+  .todo-who {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    color: #fff; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .todo-del {
+    background: none; border: none; color: var(--ink-soft);
+    cursor: pointer; font-size: 13px; flex-shrink: 0; margin-top: 3px;
+  }
+
+  .anniv-item { display: flex; align-items: center; gap: 13px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+  .anniv-dday { width: 58px; flex-shrink: 0; text-align: center; }
+  .anniv-dday-num { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; }
+  .anniv-dday.near .anniv-dday-num { color: #d9657e; }
+  .anniv-dday-sub { font-size: 10px; color: var(--ink-soft); margin-top: 1px; }
+  .anniv-divider { width: 1px; align-self: stretch; background: var(--line); }
+  .anniv-info { flex: 1; }
+  .anniv-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .anniv-date { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .anniv-del { background: none; border: none; color: var(--ink-soft); cursor: pointer; font-size: 13px; }
+
+  .fab {
+    position: fixed; bottom: 26px; left: 50%;
+    transform: translateX(calc(-50% + 158px));
+    width: 52px; height: 52px; border-radius: 16px;
+    background: var(--ink); color: #fff; border: none;
+    font-size: 24px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+  }
+  @media (max-width: 480px) { .fab { transform: none; right: 22px; } }
+
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(28,28,30,0.5);
+    z-index: 200; display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  @media (min-width: 480px) { .modal-bg.open { align-items: center; } }
+
+  .modal {
+    background: var(--bg); border-radius: 22px 22px 0 0;
+    padding: 8px 22px 28px; width: 100%; max-width: 440px;
+    max-height: 88vh; overflow-y: auto;
+  }
+  @media (min-width: 480px) { .modal { border-radius: 20px; } }
+
+  .modal-grip { width: 36px; height: 4px; background: var(--line-strong); border-radius: 4px; margin: 8px auto 16px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; letter-spacing: -0.02em; }
+
+  .field { margin-bottom: 15px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-mid); margin-bottom: 6px; }
+  .field input, .field textarea {
+    width: 100%; border: 1px solid var(--line-strong); border-radius: 11px;
+    padding: 12px 13px; font-family: inherit; font-size: 15px;
+    background: var(--bg); color: var(--ink);
+  }
+  .field textarea { resize: none; min-height: 70px; }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--ink); }
+  .field-row { display: flex; gap: 8px; }
+  .field-row .field { flex: 1; }
+
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    padding: 9px 16px; border-radius: 11px; border: 1px solid var(--line-strong);
+    background: var(--bg); font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--ink-mid);
+  }
+
+  .seg { display: flex; background: var(--surface); border-radius: 10px; padding: 3px; margin-bottom: 15px; }
+  .seg button {
+    flex: 1; padding: 9px; border: none; background: none;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-soft); cursor: pointer; border-radius: 8px;
+  }
+  .seg button.active { background: var(--bg); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn { flex: 1; padding: 13px; border-radius: 12px; border: none; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-cancel { background: var(--surface); color: var(--ink-mid); }
+  .btn-save { background: var(--ink); color: #fff; }
+
+  .mm-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .mm-color { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+  .mm-name { flex: 1; font-size: 15px; font-weight: 600; }
+  .mm-del { background: none; border: none; color: var(--ink-soft); cursor: pointer; font-size: 13px; }
+  .mm-add {
+    width: 100%; padding: 12px; border: 1px dashed var(--line-strong);
+    border-radius: 11px; background: var(--bg); font-family: inherit;
+    font-size: 14px; font-weight: 600; color: var(--ink-mid);
+    cursor: pointer; margin-top: 10px;
+  }
+  .color-pick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .color-opt { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; }
+  .color-opt.sel { border-color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="head-row">
+      <div>
+        <div class="head-title">우리집</div>
+        <div class="head-date" id="headDate">—</div>
+      </div>
+      <div class="members" id="members"></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="cal">달력</button>
+    <button class="tab" data-tab="todo">할일</button>
+    <button class="tab" data-tab="anniv">기념일</button>
+  </div>
+
+  <div class="content" id="content">
+    <div class="empty"><div class="ic">⏳</div>불러오는 중...</div>
+  </div>
+
+  <button class="fab" id="fab">+</button>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalInner"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyCuPItNZquhK517IReU7PUI-ioNzIggNEw",
+  authDomain: "hjyj-calendar.firebaseapp.com",
+  projectId: "hjyj-calendar",
+  storageBucket: "hjyj-calendar.firebasestorage.app",
+  messagingSenderId: "732990575304",
+  appId: "1:732990575304:web:8286275b6829c48b1f4bfd"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const boardRef = doc(db, "familyBoards", "main");
+  let data = {
+    members: [
+      { id: 'm1', name: '혁주', color: '#3b82c4' },
+      { id: 'm2', name: '연진', color: '#d9657e' }
+    ],
+    events: [], todos: [], annivs: []
+  };
+
+  let currentTab = 'cal';
+  let calView = 'month';
+  let cursor = new Date();
+  let selectedDate = new Date();
+  let todoFilter = 'all';
+
+  cursor.setHours(0,0,0,0);
+  selectedDate.setHours(0,0,0,0);
+
+  const OWNER_SHARED = 'shared';
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  function loadAll() {
+  onSnapshot(boardRef, (snap) => {
+
+    if (snap.exists()) {
+      const loaded = snap.data();
+
+      data = {
+        members: loaded.members || data.members,
+        events: loaded.events || [],
+        todos: loaded.todos || [],
+        annivs: loaded.annivs || []
+      };
+    }
+
+    render();
+  });
+}
+
+  async function saveAll() {
+  try {
+    await setDoc(boardRef, data);
+  } catch (e) {
+    alert('저장 실패');
+    console.error(e);
+  }
+}
+
+  function ymd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function parseYmd(s) {
+    const [y,m,d] = s.split('-').map(Number);
+    const dt = new Date(y, m-1, d); dt.setHours(0,0,0,0); return dt;
+  }
+  function fmtDateK(d) { return `${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`; }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  function ownerColor(o) {
+    if (o === OWNER_SHARED) return '#5b9a6b';
+    const m = data.members.find(x => x.id === o);
+    return m ? m.color : '#5b9a6b';
+  }
+  function ownerName(o) {
+    if (o === OWNER_SHARED) return '함께';
+    const m = data.members.find(x => x.id === o);
+    return m ? m.name : '?';
+  }
+  function ownerBg(o) {
+    const hex = ownerColor(o);
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},0.12)`;
+  }
+
+  function eventsOnDate(d) {
+    const ds = ymd(d);
+    return data.events.filter(e => {
+      const s = e.startDate, en = e.endDate || e.startDate;
+      return ds >= s && ds <= en;
+    }).sort((a,b) => (a.time||'99').localeCompare(b.time||'99'));
+  }
+
+  function calcDday(md) {
+    const [m,d] = md.split('-').map(Number);
+    const now = new Date(); now.setHours(0,0,0,0);
+    let t = new Date(now.getFullYear(), m-1, d);
+    if (t < now) t = new Date(now.getFullYear()+1, m-1, d);
+    return Math.round((t-now)/86400000);
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render() {
+    const now = new Date();
+    document.getElementById('headDate').textContent =
+      `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${DOW[now.getDay()]}요일`;
+
+    document.getElementById('members').innerHTML =
+      data.members.map(m => `<div class="member-dot" style="background:${m.color}">${esc(m.name.slice(0,2))}</div>`).join('')
+      + `<div class="member-gear">⚙</div>`;
+    document.getElementById('members').onclick = openMemberModal;
+
+    const c = document.getElementById('content');
+    if (currentTab === 'cal') c.innerHTML = renderCal();
+    else if (currentTab === 'todo') c.innerHTML = renderTodo();
+    else c.innerHTML = renderAnniv();
+    bindEvents();
+  }
+
+  function renderCal() {
+    if (calView === 'month') return renderMonth();
+    if (calView === 'week') return renderWeek();
+    return renderDay();
+  }
+
+  function weekStart(d) {
+    const s = new Date(d); s.setDate(s.getDate() - s.getDay()); s.setHours(0,0,0,0); return s;
+  }
+
+  function calHeader() {
+    let label;
+    if (calView === 'month') label = `${cursor.getFullYear()}년 ${cursor.getMonth()+1}월`;
+    else if (calView === 'week') {
+      const s = weekStart(cursor), e = new Date(s); e.setDate(e.getDate()+6);
+      label = `${s.getMonth()+1}월 ${s.getDate()}일~${e.getDate()}일`;
+    } else label = fmtDateK(selectedDate);
+    return `
+      <div class="cal-top">
+        <div class="cal-month">${label}</div>
+        <div class="cal-nav">
+          <button data-cal="-1">‹</button>
+          <button class="today-btn" data-cal="0">오늘</button>
+          <button data-cal="1">›</button>
+        </div>
+      </div>
+      <div class="view-switch">
+        <button class="${calView==='month'?'active':''}" data-v="month">월간</button>
+        <button class="${calView==='week'?'active':''}" data-v="week">주간</button>
+        <button class="${calView==='day'?'active':''}" data-v="day">일간</button>
+      </div>`;
+  }
+
+  function renderMonth() {
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    const first = new Date(y,m,1).getDay();
+    const days = new Date(y,m+1,0).getDate();
+    const now = new Date(); now.setHours(0,0,0,0);
+
+    let cells = '';
+    for (let i=0;i<first;i++) cells += `<div class="cal-cell empty-cell"></div>`;
+    for (let d=1;d<=days;d++) {
+      const date = new Date(y,m,d);
+      const dow = date.getDay();
+      const evs = eventsOnDate(date);
+      const isToday = ymd(date)===ymd(now);
+      const isSel = ymd(date)===ymd(selectedDate);
+      let bars = '';
+      evs.slice(0,3).forEach(e => {
+        bars += `<div class="cal-bar" style="background:${ownerColor(e.owner)}">${esc(e.title)}</div>`;
+      });
+      if (evs.length>3) bars += `<div class="cal-more">+${evs.length-3}</div>`;
+      cells += `<div class="cal-cell ${dow===0?'sun':''} ${isToday?'today':''} ${isSel?'sel':''}" data-day="${ymd(date)}">
+        <span class="cal-num">${d}</span>${bars}</div>`;
+    }
+    return calHeader() + `
+      <div class="cal-grid">
+        ${DOW.map((d,i)=>`<div class="cal-dow ${i===0?'sun':''}">${d}</div>`).join('')}
+        ${cells}
+      </div>
+      ${renderDayDetail(selectedDate)}`;
+  }
+
+  function renderWeek() {
+    const s = weekStart(cursor);
+    let days = '';
+    for (let i=0;i<7;i++) {
+      const date = new Date(s); date.setDate(s.getDate()+i);
+      const isSel = ymd(date)===ymd(selectedDate);
+      const hasEv = eventsOnDate(date).length>0;
+      days += `<div class="week-day ${isSel?'sel':''}" data-day="${ymd(date)}">
+        <div class="wd-dow ${date.getDay()===0?'sun':''}">${DOW[date.getDay()]}</div>
+        <div class="wd-num">${date.getDate()}</div>
+        ${hasEv?'<div class="wd-dot"></div>':''}</div>`;
+    }
+    return calHeader() + `<div class="week-row">${days}</div>` + renderDayDetail(selectedDate, true);
+  }
+
+  function renderDay() {
+    return calHeader() + renderDayDetail(selectedDate, true);
+  }
+
+  function renderDayDetail(date, noBorder) {
+    const evs = eventsOnDate(date);
+    let body;
+    if (evs.length===0) {
+      body = `<div class="empty" style="padding:30px 20px"><div class="ic">📅</div>이 날은 일정이 없어요</div>`;
+    } else {
+      body = evs.map(e => {
+        const isMulti = e.endDate && e.endDate !== e.startDate;
+        let meta;
+        if (isMulti) {
+          const sd = parseYmd(e.startDate), ed = parseYmd(e.endDate);
+          meta = `${sd.getMonth()+1}/${sd.getDate()} ~ ${ed.getMonth()+1}/${ed.getDate()}`;
+        } else if (e.time) meta = e.time;
+        else meta = '하루 종일';
+        return `<div class="event-card" data-ev="${e.id}">
+          <div class="event-stripe" style="background:${ownerColor(e.owner)}"></div>
+          <div class="event-body">
+            <div class="event-name">${esc(e.title)}</div>
+            <div class="event-meta">${meta}</div>
+            ${e.memo?`<div class="event-memo">${esc(e.memo)}</div>`:''}
+          </div>
+          <span class="event-tag" style="background:${ownerBg(e.owner)};color:${ownerColor(e.owner)}">${esc(ownerName(e.owner))}</span>
+          <button class="event-del" data-delev="${e.id}">✕</button>
+        </div>`;
+      }).join('');
+    }
+    return `<div class="day-detail" ${noBorder?'style="border:none;margin-top:8px;padding-top:0"':''}>
+      <div class="day-detail-title">${fmtDateK(date)}</div>${body}</div>`;
+  }
+
+  function renderTodo() {
+    let chips = `<div class="filter-chip ${todoFilter==='all'?'active':''}" data-tf="all">전체</div>`;
+    data.members.forEach(m => {
+      chips += `<div class="filter-chip ${todoFilter===m.id?'active':''}" data-tf="${m.id}">${esc(m.name)}</div>`;
+    });
+
+    let list = data.todos;
+    if (todoFilter !== 'all') list = list.filter(t => t.owner === todoFilter);
+    const pending = list.filter(t => !t.doneAt);
+    const done = list.filter(t => t.doneAt);
+
+    function row(t) {
+      const m = data.members.find(x => x.id === t.owner);
+      const color = m ? m.color : '#999';
+      const nm = m ? m.name.slice(0,1) : '?';
+      const cd = parseYmd(t.createdAt);
+      let dates = `<span>등록 ${cd.getMonth()+1}/${cd.getDate()}</span>`;
+      if (t.doneAt) {
+        const dd = parseYmd(t.doneAt);
+        dates += `<span class="dn">완료 ${dd.getMonth()+1}/${dd.getDate()}</span>`;
+      }
+      return `<div class="todo-item ${t.doneAt?'done':''}">
+        <div class="todo-check" data-toggle="${t.id}">${t.doneAt?'✓':''}</div>
+        <div class="todo-body">
+          <div class="todo-text">${esc(t.text)}</div>
+          <div class="todo-dates">${dates}</div>
+        </div>
+        <div class="todo-who" style="background:${color}">${esc(nm)}</div>
+        <button class="todo-del" data-delto="${t.id}">✕</button>
+      </div>`;
+    }
+
+    let html = `<div class="todo-filter">${chips}</div>`;
+    if (pending.length===0 && done.length===0) {
+      html += `<div class="empty"><div class="ic">✅</div>할일이 없어요<br>+ 버튼으로 추가해보세요</div>`;
+      return html;
+    }
+    html += `<div class="todo-group-title">미진행 (${pending.length})</div>`;
+    html += pending.length ? pending.map(row).join('') : `<div class="empty" style="padding:24px">미진행 할일이 없어요</div>`;
+    html += `<div class="todo-group-title">완료 (${done.length})</div>`;
+    html += done.length ? done.map(row).join('') : `<div class="empty" style="padding:24px">완료한 할일이 없어요</div>`;
+    return html;
+  }
+
+  function renderAnniv() {
+    if (data.annivs.length===0) {
+      return `<div class="empty"><div class="ic">🎂</div>등록된 기념일이 없어요<br>가족 생일을 추가해보세요</div>`;
+    }
+    const sorted = [...data.annivs].map(a => ({...a, _dday: calcDday(a.date)})).sort((x,y)=>x._dday-y._dday);
+    return sorted.map(a => {
+      const [m,d] = a.date.split('-').map(Number);
+      const near = a._dday <= 14;
+      const ddText = a._dday===0 ? 'D-DAY' : `D-${a._dday}`;
+      return `<div class="anniv-item">
+        <div class="anniv-dday ${near?'near':''}">
+          <div class="anniv-dday-num">${ddText}</div>
+          <div class="anniv-dday-sub">${m}월 ${d}일</div>
+        </div>
+        <div class="anniv-divider"></div>
+        <div class="anniv-info">
+          <div class="anniv-name">${esc(a.name)}</div>
+          <div class="anniv-date">${a.emoji||'🎂'} ${a._dday===0?'오늘이에요!':a._dday+'일 남음'}</div>
+        </div>
+        <button class="anniv-del" data-dela="${a.id}">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  function bindEvents() {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        currentTab = t.dataset.tab;
+        render();
+      };
+    });
+    document.querySelectorAll('[data-v]').forEach(b => {
+      b.onclick = () => { calView = b.dataset.v; render(); };
+    });
+    document.querySelectorAll('[data-cal]').forEach(b => {
+      b.onclick = () => {
+        const dir = parseInt(b.dataset.cal);
+        if (dir===0) {
+          cursor = new Date(); cursor.setHours(0,0,0,0);
+          selectedDate = new Date(); selectedDate.setHours(0,0,0,0);
+        } else if (calView==='month') cursor.setMonth(cursor.getMonth()+dir);
+        else if (calView==='week') cursor.setDate(cursor.getDate()+dir*7);
+        else { selectedDate.setDate(selectedDate.getDate()+dir); cursor = new Date(selectedDate); }
+        render();
+      };
+    });
+    document.querySelectorAll('[data-day]').forEach(el => {
+      el.onclick = () => {
+        selectedDate = parseYmd(el.dataset.day);
+        if (calView==='week') cursor = new Date(selectedDate);
+        render();
+      };
+    });
+    document.querySelectorAll('[data-ev]').forEach(el => {
+      el.onclick = (e) => {
+        if (e.target.closest('[data-delev]')) return;
+        el.classList.toggle('open');
+      };
+    });
+    document.querySelectorAll('[data-delev]').forEach(b => {
+      b.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm('이 일정을 삭제할까요?')) return;
+        data.events = data.events.filter(x => x.id !== b.dataset.delev);
+        await saveAll(); render();
+      };
+    });
+    document.querySelectorAll('[data-tf]').forEach(c => {
+      c.onclick = () => { todoFilter = c.dataset.tf; render(); };
+    });
+    document.querySelectorAll('[data-toggle]').forEach(el => {
+      el.onclick = async () => {
+        const t = data.todos.find(x => x.id === el.dataset.toggle);
+        t.doneAt = t.doneAt ? null : ymd(new Date());
+        await saveAll(); render();
+      };
+    });
+    document.querySelectorAll('[data-delto]').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('이 할일을 삭제할까요?')) return;
+        data.todos = data.todos.filter(x => x.id !== b.dataset.delto);
+        await saveAll(); render();
+      };
+    });
+    document.querySelectorAll('[data-dela]').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('이 기념일을 삭제할까요?')) return;
+        data.annivs = data.annivs.filter(x => x.id !== b.dataset.dela);
+        await saveAll(); render();
+      };
+    });
+  }
+
+  const modalBg = document.getElementById('modalBg');
+  const modalInner = document.getElementById('modalInner');
+  function closeModal() { modalBg.classList.remove('open'); }
+  modalBg.onclick = (e) => { if (e.target === modalBg) closeModal(); };
+
+  document.getElementById('fab').onclick = () => {
+    if (currentTab==='cal') openEventModal();
+    else if (currentTab==='todo') openTodoModal();
+    else openAnnivModal();
+  };
+
+  function ownerChips(selId) {
+    let chips = data.members.map(m =>
+      `<div class="chip" data-owner="${m.id}" style="${selId===m.id?`background:${m.color};color:#fff;border-color:transparent`:''}">${esc(m.name)}</div>`
+    ).join('');
+    chips += `<div class="chip" data-owner="${OWNER_SHARED}" style="${selId===OWNER_SHARED?'background:#5b9a6b;color:#fff;border-color:transparent':''}">함께</div>`;
+    return chips;
+  }
+
+  function bindChipRow(sel, onPick) {
+    const row = modalInner.querySelector(sel);
+    row.querySelectorAll('.chip').forEach(chip => {
+      chip.onclick = () => {
+        row.querySelectorAll('.chip').forEach(c => { c.style.background=''; c.style.color=''; c.style.borderColor=''; });
+        const owner = chip.dataset.owner;
+        const color = owner===OWNER_SHARED ? '#5b9a6b' : (data.members.find(m=>m.id===owner)?.color || '#5b9a6b');
+        chip.style.background = color; chip.style.color = '#fff'; chip.style.borderColor = 'transparent';
+        onPick(owner);
+      };
+    });
+  }
+
+  function openEventModal() {
+    const todayStr = ymd(selectedDate);
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">새 일정</div>
+      <div class="seg" id="evtType">
+        <button class="active" data-t="single">하루 일정</button>
+        <button data-t="range">여러 날 (1~3일)</button>
+      </div>
+      <div class="field">
+        <label>제목</label>
+        <input id="evtTitle" placeholder="예: 가족 외식, 병원 예약" />
+      </div>
+      <div id="singleFields">
+        <div class="field-row">
+          <div class="field"><label>날짜</label><input id="evtDate" type="date" value="${todayStr}" /></div>
+          <div class="field"><label>시간 (선택)</label><input id="evtTime" type="time" /></div>
+        </div>
+      </div>
+      <div id="rangeFields" style="display:none">
+        <div class="field-row">
+          <div class="field"><label>시작일</label><input id="evtStart" type="date" value="${todayStr}" /></div>
+          <div class="field"><label>종료일</label><input id="evtEnd" type="date" value="${todayStr}" /></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>메모 (선택)</label>
+        <textarea id="evtMemo" placeholder="자세한 내용을 적어주세요"></textarea>
+      </div>
+      <div class="field">
+        <label>누구</label>
+        <div class="chip-row" id="evtOwner">${ownerChips(OWNER_SHARED)}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="mCancel">취소</button>
+        <button class="btn btn-save" id="mSave">저장</button>
+      </div>`;
+    modalBg.classList.add('open');
+
+    let evtType = 'single', owner = OWNER_SHARED;
+    modalInner.querySelectorAll('#evtType button').forEach(b => {
+      b.onclick = () => {
+        modalInner.querySelectorAll('#evtType button').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        evtType = b.dataset.t;
+        modalInner.querySelector('#singleFields').style.display = evtType==='single'?'block':'none';
+        modalInner.querySelector('#rangeFields').style.display = evtType==='range'?'block':'none';
+      };
+    });
+    bindChipRow('#evtOwner', v => owner = v);
+    modalInner.querySelector('#mCancel').onclick = closeModal;
+    modalInner.querySelector('#mSave').onclick = async () => {
+      const title = modalInner.querySelector('#evtTitle').value.trim();
+      const memo = modalInner.querySelector('#evtMemo').value.trim();
+      if (!title) { alert('제목을 입력해주세요'); return; }
+      let ev = { id: uid(), title, memo, owner };
+      if (evtType==='single') {
+        ev.startDate = modalInner.querySelector('#evtDate').value;
+        ev.endDate = ev.startDate;
+        ev.time = modalInner.querySelector('#evtTime').value || '';
+      } else {
+        const s = modalInner.querySelector('#evtStart').value;
+        const e = modalInner.querySelector('#evtEnd').value;
+        if (parseYmd(e) < parseYmd(s)) { alert('종료일이 시작일보다 빠를 수 없어요'); return; }
+        if (Math.round((parseYmd(e)-parseYmd(s))/86400000) > 2) { alert('여러 날 일정은 최대 3일까지만 가능해요'); return; }
+        ev.startDate = s; ev.endDate = e; ev.time = '';
+      }
+      data.events.push(ev);
+      await saveAll();
+      closeModal(); render();
+    };
+  }
+
+  function openTodoModal() {
+    let owner = data.members[0]?.id;
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">새 할일</div>
+      <div class="field">
+        <label>할일 내용</label>
+        <input id="todoText" placeholder="예: 우유 사기, 관리비 납부" />
+      </div>
+      <div class="field">
+        <label>누구</label>
+        <div class="chip-row" id="todoOwner">
+          ${data.members.map((m,i)=>`<div class="chip" data-owner="${m.id}" style="${i===0?`background:${m.color};color:#fff;border-color:transparent`:''}">${esc(m.name)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="mCancel">취소</button>
+        <button class="btn btn-save" id="mSave">추가</button>
+      </div>`;
+    modalBg.classList.add('open');
+    bindChipRow('#todoOwner', v => owner = v);
+    modalInner.querySelector('#mCancel').onclick = closeModal;
+    modalInner.querySelector('#mSave').onclick = async () => {
+      const text = modalInner.querySelector('#todoText').value.trim();
+      if (!text) { alert('할일 내용을 입력해주세요'); return; }
+      data.todos.push({ id: uid(), text, owner, createdAt: ymd(new Date()), doneAt: null });
+      await saveAll();
+      closeModal(); render();
+    };
+  }
+
+  function openAnnivModal() {
+    let emoji = '🎂';
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">새 기념일</div>
+      <div class="field">
+        <label>이름</label>
+        <input id="annivName" placeholder="예: 혁주 생일, 결혼기념일" />
+      </div>
+      <div class="field">
+        <label>날짜</label>
+        <input id="annivDate" type="date" />
+      </div>
+      <div class="field">
+        <label>아이콘</label>
+        <div class="chip-row" id="annivEmoji">
+          <div class="chip" data-emoji="🎂" style="background:var(--surface)">🎂</div>
+          <div class="chip" data-emoji="💍">💍</div>
+          <div class="chip" data-emoji="🎉">🎉</div>
+          <div class="chip" data-emoji="❤️">❤️</div>
+          <div class="chip" data-emoji="🎓">🎓</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="mCancel">취소</button>
+        <button class="btn btn-save" id="mSave">등록</button>
+      </div>`;
+    modalBg.classList.add('open');
+    const emojiRow = modalInner.querySelector('#annivEmoji');
+    emojiRow.querySelectorAll('.chip').forEach(c => {
+      c.onclick = () => {
+        emojiRow.querySelectorAll('.chip').forEach(x => x.style.background='');
+        c.style.background = 'var(--surface)';
+        emoji = c.dataset.emoji;
+      };
+    });
+    modalInner.querySelector('#mCancel').onclick = closeModal;
+    modalInner.querySelector('#mSave').onclick = async () => {
+      const name = modalInner.querySelector('#annivName').value.trim();
+      const dv = modalInner.querySelector('#annivDate').value;
+      if (!name || !dv) { alert('이름과 날짜를 입력해주세요'); return; }
+      const [,m,d] = dv.split('-');
+      data.annivs.push({ id: uid(), name, date: `${m}-${d}`, emoji });
+      await saveAll();
+      closeModal(); render();
+    };
+  }
+
+  function openMemberModal() { renderMemberModal(); modalBg.classList.add('open'); }
+
+  function renderMemberModal() {
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">구성원 관리</div>
+      <div id="mmList">
+        ${data.members.map(m => `
+          <div class="mm-item">
+            <div class="mm-color" style="background:${m.color}"></div>
+            <div class="mm-name">${esc(m.name)}</div>
+            <button class="mm-del" data-delm="${m.id}">삭제</button>
+          </div>`).join('')}
+      </div>
+      <button class="mm-add" id="mmAdd">+ 구성원 추가</button>
+      <div class="modal-actions" style="margin-top:18px">
+        <button class="btn btn-save" id="mmClose">완료</button>
+      </div>`;
+    modalInner.querySelector('#mmClose').onclick = () => { closeModal(); render(); };
+    modalInner.querySelector('#mmAdd').onclick = openAddMember;
+    modalInner.querySelectorAll('[data-delm]').forEach(b => {
+      b.onclick = async () => {
+        if (data.members.length <= 1) { alert('최소 한 명은 있어야 해요'); return; }
+        if (!confirm('이 구성원을 삭제할까요? 관련 일정·할일은 그대로 남아있어요.')) return;
+        data.members = data.members.filter(x => x.id !== b.dataset.delm);
+        await saveAll();
+        renderMemberModal();
+      };
+    });
+  }
+
+  function openAddMember() {
+    const COLORS = ['#3b82c4','#d9657e','#e0904c','#5b9a6b','#8a6fc4','#c44b6b','#d4a83b','#4ba6a6'];
+    let pickColor = COLORS[data.members.length % COLORS.length];
+    modalInner.innerHTML = `
+      <div class="modal-grip"></div>
+      <div class="modal-title">구성원 추가</div>
+      <div class="field">
+        <label>이름</label>
+        <input id="newMemName" placeholder="이름을 입력하세요" />
+      </div>
+      <div class="field">
+        <label>색상</label>
+        <div class="color-pick" id="colorPick">
+          ${COLORS.map(c => `<div class="color-opt ${c===pickColor?'sel':''}" data-color="${c}" style="background:${c}"></div>`).join('')}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="mCancel">취소</button>
+        <button class="btn btn-save" id="mSave">추가</button>
+      </div>`;
+    modalInner.querySelectorAll('.color-opt').forEach(o => {
+      o.onclick = () => {
+        modalInner.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('sel'));
+        o.classList.add('sel');
+        pickColor = o.dataset.color;
+      };
+    });
+    modalInner.querySelector('#mCancel').onclick = renderMemberModal;
+    modalInner.querySelector('#mSave').onclick = async () => {
+      const name = modalInner.querySelector('#newMemName').value.trim();
+      if (!name) { alert('이름을 입력해주세요'); return; }
+      data.members.push({ id: uid(), name, color: pickColor });
+      await saveAll();
+      renderMemberModal();
+    };
+  }
+
+  loadAll();
+</script>
+
+</body>
+</html>
