@@ -754,42 +754,80 @@ const boardRef = doc(db, "familyBoards", "main");
     return html;
   }
 
-  function renderAnniv() {
-    if (data.annivs.length===0) {
-      return `<div class="empty"><div class="ic">🎂</div>등록된 기념일이 없어요<br>가족 생일을 추가해보세요</div>`;
-    }
-    const sorted = [...data.annivs]
-      .map(a => ({...a, _info: getAnnivInfo(a.date)}))
-      .sort((x,y)=>x._info.dday-y._info.dday);
+  function getAnnivInfo(dateValue) {
+  const now = new Date();
+  now.setHours(0,0,0,0);
 
-    return sorted.map(a => {
-      const info = a._info;
-      const near = info.dday <= 14;
-      const ddText = info.dday === 0 ? 'D-DAY' : `D-${info.dday}`;
-      const subText = info.together
-        ? `${info.month}월 ${info.day}일 · 함께한지 ${info.together.toLocaleString()}일`
-        : `${info.month}월 ${info.day}일`;
-      const detailText = info.dday === 0
-        ? '오늘이에요!'
-        : `${info.dday}일 남음${info.together ? ` · 함께한지 ${info.together.toLocaleString()}일` : ''}`;
+  const parts = String(dateValue).split('-');
 
-      return `<div class="anniv-item">
-        <div class="anniv-dday ${near?'near':''}">
-          <div class="anniv-dday-num">${ddText}</div>
-          <div class="anniv-dday-sub">${subText}</div>
-        </div>
-        <div class="anniv-divider"></div>
-        <div class="anniv-info">
-          <div class="anniv-name">${esc(a.name)}</div>
-          <div class="anniv-date">${a.emoji||'🎂'} ${detailText}</div>
-        </div>
-        <div class="anniv-actions">
-          <button class="anniv-edit" data-edita="${a.id}">수정</button>
-          <button class="anniv-del" data-dela="${a.id}">✕</button>
-        </div>
-      </div>`;
-    }).join('');
+  let year = null;
+  let month, day;
+
+  if (parts.length === 3) {
+    year = Number(parts[0]);
+    month = Number(parts[1]);
+    day = Number(parts[2]);
+  } else {
+    month = Number(parts[0]);
+    day = Number(parts[1]);
   }
+
+  let next = new Date(now.getFullYear(), month - 1, day);
+  next.setHours(0,0,0,0);
+
+  if (next < now) {
+    next = new Date(now.getFullYear() + 1, month - 1, day);
+  }
+
+  const dday = Math.ceil((next - now) / 86400000);
+
+  let passed = null;
+  if (year) {
+    const start = new Date(year, month - 1, day);
+    start.setHours(0,0,0,0);
+    passed = Math.floor((now - start) / 86400000) + 1;
+  }
+
+  return { dday, passed };
+}
+
+function renderAnniv() {
+  if (data.annivs.length === 0) {
+    return `<div class="empty"><div class="ic">🎂</div>등록된 기념일이 없어요<br>가족 생일을 추가해보세요</div>`;
+  }
+
+  const sorted = [...data.annivs]
+    .map(a => ({ ...a, _info: getAnnivInfo(a.date) }))
+    .sort((x, y) => x._info.dday - y._info.dday);
+
+  return sorted.map(a => {
+    const info = a._info;
+    const parts = String(a.date).split('-');
+    const hasYear = parts.length === 3;
+    const displayDate = hasYear ? a.date : `${parts[0]}월 ${parts[1]}일`;
+
+    const subText = info.passed
+      ? `${displayDate}부터 ${info.passed.toLocaleString()}일째`
+      : `${info.dday === 0 ? '오늘이에요!' : info.dday + '일 남음'}`;
+
+    const near = info.dday <= 14;
+    const ddText = info.dday === 0 ? 'D-DAY' : `D-${info.dday}`;
+
+    return `<div class="anniv-item">
+      <div class="anniv-dday ${near ? 'near' : ''}">
+        <div class="anniv-dday-num">${ddText}</div>
+        <div class="anniv-dday-sub">${displayDate}</div>
+      </div>
+      <div class="anniv-divider"></div>
+      <div class="anniv-info">
+        <div class="anniv-name">${esc(a.name)}</div>
+        <div class="anniv-date">${a.emoji || '🎂'} ${subText}</div>
+      </div>
+      <button class="anniv-edit" data-edita="${a.id}">수정</button>
+      <button class="anniv-del" data-dela="${a.id}">✕</button>
+    </div>`;
+  }).join('');
+}
 
   function bindEvents() {
     document.querySelectorAll('.tab').forEach(t => {
