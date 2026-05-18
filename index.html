@@ -210,8 +210,11 @@
     color: var(--ink-mid); background: var(--surface); border: 1px solid var(--line);
     border-radius: 999px; padding: 3px 8px; cursor: pointer;
   }
-  .todo-dates { display: flex; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+  .todo-dates { display: flex; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--ink-soft); flex-wrap: wrap; }
   .todo-dates .dn { color: var(--shared); font-weight: 600; }
+  .todo-dates .target { color: var(--ink-mid); font-weight: 700; }
+  .todo-dates .target.today { color: #d9657e; font-weight: 800; }
+  .todo-dates .target.overdue { color: #d9657e; font-weight: 800; }
   .todo-who {
     width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
     color: #fff; font-size: 10px; font-weight: 700;
@@ -483,6 +486,19 @@ const boardRef = doc(db, "familyBoards", "main");
     const [y,m,d] = s.split('-').map(Number);
     const dt = new Date(y, m-1, d); dt.setHours(0,0,0,0); return dt;
   }
+  function fmtTargetDate(s) {
+    if (!s) return '';
+    const d = parseYmd(s);
+    return `목표 ${d.getMonth()+1}/${d.getDate()}`;
+  }
+  function targetClass(t) {
+    if (!t.targetDate || t.doneAt) return '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = parseYmd(t.targetDate);
+    if (ymd(target) === ymd(today)) return 'today';
+    if (target < today) return 'overdue';
+    return '';
+  }
   function fmtDateK(d) { return `${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`; }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -697,6 +713,9 @@ const boardRef = doc(db, "familyBoards", "main");
       const nm = m ? m.name.slice(0,1) : '?';
       const cd = parseYmd(t.createdAt);
       let dates = `<span>등록 ${cd.getMonth()+1}/${cd.getDate()}</span>`;
+      if (t.targetDate) {
+        dates += `<span class="target ${targetClass(t)}">${fmtTargetDate(t.targetDate)}</span>`;
+      }
       if (t.doneAt) {
         const dd = parseYmd(t.doneAt);
         dates += `<span class="dn">완료 ${dd.getMonth()+1}/${dd.getDate()}</span>`;
@@ -1061,6 +1080,10 @@ function renderAnniv() {
         <textarea id="todoMemo" placeholder="자세한 내용이나 링크, 준비물 등을 적어주세요">${esc(editing?.memo || '')}</textarea>
       </div>
       <div class="field">
+        <label>목표일 / 마감일 (선택)</label>
+        <input id="todoTargetDate" type="date" value="${esc(editing?.targetDate || '')}" />
+      </div>
+      <div class="field">
         <label>누구</label>
         <div class="chip-row" id="todoOwner">
           ${data.members.map((m)=>`<div class="chip" data-owner="${m.id}" style="${owner===m.id?`background:${m.color};color:#fff;border-color:transparent`:''}">${esc(m.name)}</div>`).join('')}
@@ -1076,12 +1099,13 @@ function renderAnniv() {
     modalInner.querySelector('#mSave').onclick = async () => {
       const text = modalInner.querySelector('#todoText').value.trim();
       const memo = modalInner.querySelector('#todoMemo').value.trim();
+      const targetDate = modalInner.querySelector('#todoTargetDate').value;
       if (!text) { alert('할일 제목을 입력해주세요'); return; }
 
       if (editing) {
-        data.todos = data.todos.map(x => x.id === editId ? { ...x, text, memo, owner } : x);
+        data.todos = data.todos.map(x => x.id === editId ? { ...x, text, memo, owner, targetDate } : x);
       } else {
-        data.todos.push({ id: uid(), text, memo, owner, createdAt: ymd(new Date()), doneAt: null });
+        data.todos.push({ id: uid(), text, memo, owner, targetDate, createdAt: ymd(new Date()), doneAt: null });
       }
 
       await saveAll();
@@ -1112,6 +1136,7 @@ function renderAnniv() {
         <label>일자</label>
         <div style="font-size:14px;color:var(--ink-mid);line-height:1.6;">
           ${created ? `등록 ${created.getMonth()+1}/${created.getDate()}` : ''}
+          ${t.targetDate ? `<br>목표 ${fmtTargetDate(t.targetDate).replace('목표 ', '')}` : ''}
           ${done ? `<br>완료 ${done.getMonth()+1}/${done.getDate()}` : ''}
         </div>
       </div>
